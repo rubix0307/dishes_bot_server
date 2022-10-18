@@ -25,7 +25,8 @@ async def show_dish(message: types.Message):
     dish_id = int(text_data[0].split('=')[1])
 
     try:
-        query_text = text_data[1].split('=')[1]
+        query_text = text_data[1].split('=')[1:]
+        query_text = '='.join(query_text)
     except IndexError:
         query_text = ''
 

@@ -314,7 +314,7 @@ class Article:
 
 
 
-def get_inline_result(query, data_list, offset, is_personal_chat: bool = False, **kwargs):
+def get_inline_result(query, data_list, offset, is_personal_chat: bool = False, query_text: str = '', **kwargs):
     answer = []
 
     if not is_personal_chat:
@@ -338,7 +338,7 @@ def get_inline_result(query, data_list, offset, is_personal_chat: bool = False, 
                 answer.append(
                     types.InlineQueryResultArticle(
                         input_message_content = types.InputTextMessageContent(
-                                message_text= f"get_id={data['id']}&query_text={query.query}",
+                                message_text= f"get_id={data['id']}&query_text={query_text}",
                                 parse_mode='html',
                             ),
                         
