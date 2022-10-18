@@ -26,7 +26,7 @@ async def main(query: types.InlineQuery):
     data = {
         'query': query,
         'user_id': query.from_user.id,
-        'query_text': сleaning_input_text_for_search(query.query),
+        'query_text': query.query,
         'max_dishes': max_dishes,
         'offset': offset,
         'start': start,
