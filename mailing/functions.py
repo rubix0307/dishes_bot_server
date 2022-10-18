@@ -17,7 +17,6 @@ async def mailing_dishe():
 
         data = {
             'chat_id': GROUG_ID,
-            'protect_content': True,
             
         }
         
@@ -25,7 +24,7 @@ async def mailing_dishe():
         try:
             if len(photos) > 1:
                 await bot.send_media_group(
-                    media=media, **data,
+                    media=media, protect_content = True, **data,
                 )
             else:
                 show_preview = True

@@ -25,8 +25,8 @@ if __name__ == '__main__':
     
 
     async def scheduler():
-        # aioschedule.every().day.at("08:30").do(mailing_dishe)
-        aioschedule.every(1).seconds.do(mailing_dishe) # test
+        aioschedule.every().day.at("08:30").do(mailing_dishe)
+        # aioschedule.every(1).seconds.do(mailing_dishe) # test
         while True:
             await aioschedule.run_pending()
             await asyncio.sleep(1)
