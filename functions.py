@@ -14,8 +14,14 @@ from db.functions import (get_categories_data_from_id, get_fav_dish_by_user,
                           get_photos_data_from_id, sql)
 from markups import *
 
+def get_user_role(user_id) -> int:
+        user_role = sql(f'SELECT `role_id` FROM `users` WHERE `user_id` = {user_id}')
+        if user_role:
+            return user_role[0]['role_id']
+        else:
+            return 1
 
-def get_home_page(user_id:int=0) -> dict:
+def get_home_page(user_id:int=1) -> dict:
 
     text = 'Добро пожаловать в бот'
     markup = InlineKeyboardMarkup()
@@ -24,8 +30,10 @@ def get_home_page(user_id:int=0) -> dict:
     markup.add(InlineKeyboardButton(text=f'🌍 Кухни мира 🌎', callback_data=show_menu.new(menu_name=call_filters['countries'])))
     markup.add(InlineKeyboardButton(text=f'🧾 Искать рецепт', switch_inline_query_current_chat=''))
 
-    if user_id == ADMIN_ID:
-        markup.add(InlineKeyboardButton(text=f'✉️ Рассылка', switch_inline_query_current_chat=filters['mailing']))
+    
+    if get_user_role(user_id) == 2:  
+        markup.add(InlineKeyboardButton(text=f'🤖 Рассылка', switch_inline_query_current_chat=filters['mailing']))
+        markup.add(InlineKeyboardButton(text=f'🤖 Реклама', callback_data=get_ads_stats_call_menu.new()))
 
 
 
@@ -196,7 +204,7 @@ class Article:
 
 
             # admin mailing
-            if self.user_id == ADMIN_ID:
+            if get_user_role(self.user_id) == 2:
                 try:
 
                     all_mailing_dishe = sql(f'SELECT DISTINCT view FROM mailing WHERE dish_id = {self.id}')
@@ -789,4 +797,10 @@ def get_mailing_data():
 
 
 
-
+def user_activity_record(user_id: int, dish_id: int, query_text: str):
+    sql_query = f'''
+    INSERT INTO users_actions (user_id, dish_id, query_text) 
+    VALUES 
+    ({user_id},{dish_id},"{query_text}")
+    '''
+    sql(sql_query, commit=True)

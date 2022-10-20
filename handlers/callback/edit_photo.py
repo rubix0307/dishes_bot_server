@@ -10,8 +10,12 @@ from markups import set_photo_call_menu
 @dp.callback_query_handler(set_photo_call_menu.filter())
 async def edit_photo(call: types.CallbackQuery, callback_data: dict()):
     start = time.time()
+
+    
+
     user = call.from_user
     call_data = get_call_data(callback_data)
+
 
     data = get_data_dish(call_data['id'])
     article = Article(data, callback_data=call_data, user_id=user.id)

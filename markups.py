@@ -56,3 +56,12 @@ def get_back_to_inline(button_text: str = f'↪️ Назад', query_text: str 
         text=button_text,
         switch_inline_query_current_chat=query_text,
     )
+
+
+
+
+
+
+# admin
+
+get_ads_stats_call_menu = CallbackData('get_ads')
