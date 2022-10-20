@@ -32,7 +32,7 @@ filters = {
     'favorites': 'избранное',
     'top-day': 'top-day',
     'category': 'Категория=',
-    'mailing': 'mailing',
+    'mailing': 'рассылка в группу',
 }
 
 call_filters = {
