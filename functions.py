@@ -2,6 +2,7 @@ import copy
 import re
 import time
 
+import pymorphy2
 from aiogram import types
 from aiogram.types.inline_keyboard import (InlineKeyboardButton,
                                            InlineKeyboardMarkup)
@@ -13,6 +14,7 @@ from db.functions import (get_categories_data_from_id, get_fav_dish_by_user,
                           get_ingredients_data_from_id,
                           get_photos_data_from_id, sql)
 from markups import *
+
 
 def get_user_role(user_id) -> int:
         user_role = sql(f'SELECT `role_id` FROM `users` WHERE `user_id` = {user_id}')
@@ -652,7 +654,7 @@ def get_data_by_category(query_text, start, max_dishes, is_personal_chat: bool =
     cat_name = query_text.split(filters['category'])[1]
     try:
         category_id = sql(
-            f'SELECT SQL_CACHE id FROM categories WHERE title LIKE "{cat_name}%" LIMIT 1')[0]['id']
+            f'SELECT SQL_CACHE id FROM categories WHERE norm_title LIKE "{cat_name}%" LIMIT 1')[0]['id']
     except IndexError:
         category_id = 27
 
@@ -686,7 +688,7 @@ def get_by_query_text(query_text, start, max_dishes):
                 (select GROUP_CONCAT(p.local_photo SEPARATOR '\n') from photos as p where p.dish_id=d.id) as photos,
                 (select GROUP_CONCAT(DISTINCT CONCAT(i.title,": ", di.value) SEPARATOR '\n') from ingredients as i INNER JOIN dishes_ingredients as di ON di.ingredient_id = i.id where di.dish_id=d.id) as ingredients
         FROM dishes as d
-        WHERE MATCH (title) AGAINST ("{query_text}") LIMIT {start},{max_dishes}''')
+        WHERE MATCH (d.norm_title, d.title) AGAINST ("{query_text}") LIMIT {start},{max_dishes}''')
     if not data_list:
         data_list = sql(
             f'''SELECT SQL_CACHE d.*,
@@ -695,7 +697,7 @@ def get_by_query_text(query_text, start, max_dishes):
                 (select  GROUP_CONCAT(DISTINCT CONCAT(i.title,": " ,di.value)) from ingredients as i INNER JOIN dishes_ingredients as di ON di.ingredient_id = i.id where di.dish_id=d.id) as ingredients
 
             FROM dishes as d
-            WHERE d.title LIKE "%{query_text}%" ORDER BY d.likes LIMIT {start},{max_dishes}''')
+            WHERE d.norm_title LIKE "%{query_text}%" ORDER BY d.likes LIMIT {start},{max_dishes}''')
     
     return data_list
 
@@ -706,7 +708,7 @@ def get_by_query_text_min(query_text, start, max_dishes):
                 (select GROUP_CONCAT(p.local_photo SEPARATOR '\n') from photos as p where p.dish_id=d.id) as photos
             FROM dishes as d 
 
-            WHERE MATCH (d.title) AGAINST ("{query_text}")
+            WHERE MATCH (d.norm_title, d.title) AGAINST ("{query_text}")
             LIMIT {start}, {max_dishes}'''
         )
     if not data_list:
@@ -716,7 +718,7 @@ def get_by_query_text_min(query_text, start, max_dishes):
                 (select GROUP_CONCAT(c.title SEPARATOR ', ') from categories as c INNER JOIN dishes_categories as dc ON c.id=dc.category_id where dc.dish_id=d.id) as categories,
                 (select GROUP_CONCAT(p.local_photo SEPARATOR '\n') from photos as p where p.dish_id=d.id) as photos
             FROM dishes as d 
-            WHERE title LIKE "%{query_text}%" ORDER BY d.title, d.likes DESC
+            WHERE norm_title LIKE "%{query_text}%"
             LIMIT {start},{max_dishes}
             ''')
     return data_list
@@ -804,3 +806,46 @@ def user_activity_record(user_id: int, dish_id: int, query_text: str):
     ({user_id},{dish_id},"{query_text}")
     '''
     sql(sql_query, commit=True)
+
+
+
+morph = pymorphy2.MorphAnalyzer()
+def get_normal_form(text: str):
+    global morph
+    
+    text = text.replace('(', '').replace(')', '').replace('\'', '')
+
+    prelogs = [' без ', ' безо ', ' близ ', ' в ',  ' во ', ' вместо ', ' вне ', ' для ', ' до ', ' за ', ' из ', ' изо ', ' и ', ' к ',  ' ко ', ' кроме ', ' между ', ' меж ', ' на ', ' над ', ' надо ', ' о ',  ' об ', ' обо ', ' от ', ' ото ', ' перед ', ' передо ', ' предо ', ' пo ', ' под ', ' при ', ' про ', ' ради ', ' с ',  ' со ', ' сквозь ', ' среди ', ' через ', ' чрез ']
+    for sumb in prelogs:
+        text = text.replace(sumb, ' ')
+
+    normal_form = [morph.parse(i)[0].normal_form for i in text.split()]
+
+    return ' '.join(normal_form)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

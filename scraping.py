@@ -269,16 +269,17 @@ def get_recipe(driver):
 
 
 
+if __name__ == '__main__':
 
 
 
-all_times = []
+    all_times = []
 
-all_url = functions.sql('SELECT id,link FROM dish', fetchall=True)
-confirmed_urls = [i['original_link'] for i in functions.sql('SELECT id, original_link FROM dishes', fetchall=True, database='bot')]
+    all_url = functions.sql('SELECT id,link FROM dish', fetchall=True)
+    confirmed_urls = [i['original_link'] for i in functions.sql('SELECT id, original_link FROM dishes', fetchall=True, database='bot')]
 
-for i in range(7):
-    threading.Thread(target = get_recipe, args = (get_driver(),)).start()
+    for i in range(7):
+        threading.Thread(target = get_recipe, args = (get_driver(),)).start()
 
     
 

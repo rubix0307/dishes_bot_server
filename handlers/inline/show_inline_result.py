@@ -7,7 +7,7 @@ import requests
 from app import dp
 from config import MEDIA_URL
 from functions import (get_blank_data, get_data_by_category, get_data_by_favorites, get_data_by_mailing, get_data_by_query_text,
-                       get_inline_result,
+                       get_inline_result, get_normal_form,
                        сleaning_input_text_for_search, сleaning_input_text_from_sql_injection)
 from markups import br, filters
 
@@ -26,7 +26,7 @@ async def main(query: types.InlineQuery):
     data = {
         'query': query,
         'user_id': query.from_user.id,
-        'query_text': query.query,
+        'query_text': get_normal_form(query.query),
         'max_dishes': max_dishes,
         'offset': offset,
         'start': start,
