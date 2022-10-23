@@ -8,7 +8,7 @@ from functions import get_mailing_data
 
 async def mailing_dishe(castom_dish_id: int = None):
     try:
-        article, nexts_mailing = get_mailing_data(castom_dish_id)
+        article, nexts_mailing = get_mailing_data(castom_dish_id=castom_dish_id)
 
         media = types.MediaGroup()
         photos = article.data['photos'].split('\n')[:9]
@@ -41,6 +41,7 @@ async def mailing_dishe(castom_dish_id: int = None):
         if nexts_mailing < 10:
             await bot.send_message(chat_id=ADMIN_ID, text=f'Количество блюд в рассылке: {nexts_mailing}')
 
-    except TypeError:
+    except Exception as e:
+        print(e)
         pass
 

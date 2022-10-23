@@ -231,8 +231,9 @@ class Article:
                                                 )
                                             }
                            
-                    send_now = InlineKeyboardButton('Отправить сейчас', callback_data=mail_now.new(dish_id=self.id))
-                    markup.add(InlineKeyboardButton(**data_mailing))
+                    send_now = InlineKeyboardButton('🆕 Отправить сейчас', callback_data=mail_now.new(dish_id=self.id))
+                    add_in_mailing = InlineKeyboardButton(**data_mailing)
+                    markup.add(add_in_mailing, send_now)
 
                 except:
                     pass
@@ -783,19 +784,24 @@ def get_mailing_data(castom_dish_id: int = None):
                 
 
             dish_id = mailing_ids[0]['dish_id']
-            call_data = {
+            
+        else:
+            dish_id = castom_dish_id
+
+        call_data = {
                         'id': dish_id,
                         'fav': 0,
                         'query': ' ',
                         'num_ph': 0,
                         }
-        else:
-            dish_id = castom_dish_id
 
         data = get_data_dish(dish_id)
         article = Article(data, callback_data=call_data, is_mailing=True)
 
-        return article, len(mailing_ids)
+        try:
+            return article, len(mailing_ids)
+        except:
+            return article, 0
     except:
         pass
 
