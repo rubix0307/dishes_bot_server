@@ -231,7 +231,7 @@ class Article:
                                                 )
                                             }
                            
-
+                    send_now = InlineKeyboardButton('Отправить сейчас', callback_data=mail_now.new(dish_id=self.id))
                     markup.add(InlineKeyboardButton(**data_mailing))
 
                 except:
@@ -649,12 +649,13 @@ def get_by_category_min(category_id, start, max_dishes):
 
     return data_list
 
-def get_data_by_category(query_text, start, max_dishes, is_personal_chat: bool = False, **kwargs):
+def get_data_by_category(query, start, max_dishes, is_personal_chat: bool = False, **kwargs):
 
-    cat_name = query_text.split(filters['category'])[1]
+    cat_name = query.query.split(filters['category'])[1]
+
     try:
         category_id = sql(
-            f'SELECT SQL_CACHE id FROM categories WHERE norm_title LIKE "{cat_name}%" LIMIT 1')[0]['id']
+            f'SELECT SQL_CACHE id FROM categories WHERE title LIKE "{cat_name}%" LIMIT 1')[0]['id']
     except IndexError:
         category_id = 27
 
@@ -772,21 +773,24 @@ def register_user(data):
 
 
 
-def get_mailing_data():
+def get_mailing_data(castom_dish_id: int = None):
     try:
-        mailing_ids = sql(f'SELECT * FROM `mailing` WHERE not view ')
 
-        sql(f'''DELETE FROM mailing WHERE id = {mailing_ids[0]['id']}''', commit=True)
+        if not castom_dish_id:
+            mailing_ids = sql(f'SELECT * FROM `mailing` WHERE not view ')
+            sql(f'''DELETE FROM mailing WHERE id = {mailing_ids[0]['id']}''', commit=True)
 
-            
+                
 
-        dish_id = mailing_ids[0]['dish_id']
-        call_data = {
-                    'id': dish_id,
-                    'fav': 0,
-                    'query': ' ',
-                    'num_ph': 0,
-                    }
+            dish_id = mailing_ids[0]['dish_id']
+            call_data = {
+                        'id': dish_id,
+                        'fav': 0,
+                        'query': ' ',
+                        'num_ph': 0,
+                        }
+        else:
+            dish_id = castom_dish_id
 
         data = get_data_dish(dish_id)
         article = Article(data, callback_data=call_data, is_mailing=True)

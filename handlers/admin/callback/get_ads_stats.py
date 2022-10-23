@@ -27,7 +27,7 @@ async def get_ads_stats(call: types.CallbackQuery, callback_data: dict()):
         markup.add(get_home_button(name_ad), get_home_button(count))
     
     message_data = {
-        'text': f'Всего: {all_user_count}{br*2}От куда / количество',
+        'text': f'Всего: {all_user_count}{br*2}Откуда / количество',
         'reply_markup': markup,
         'parse_mode': 'html',
     }

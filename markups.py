@@ -7,6 +7,8 @@ from aiogram.utils.callback_data import CallbackData
 br = '\n'
 
 mailing = CallbackData('add_mailing', 'dish_id', 'add', 'query_text')
+mail_now = CallbackData('mail_now', 'dish_id')
+
 show_menu = CallbackData('show_menu', 'menu_name')
 base_markup_menu = CallbackData('base_markup_menu',
     'id',

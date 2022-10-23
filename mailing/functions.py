@@ -6,9 +6,9 @@ import requests
 from functions import get_mailing_data
 
 
-async def mailing_dishe():
+async def mailing_dishe(castom_dish_id: int = None):
     try:
-        article, nexts_mailing = get_mailing_data()
+        article, nexts_mailing = get_mailing_data(castom_dish_id)
 
         media = types.MediaGroup()
         photos = article.data['photos'].split('\n')[:9]
