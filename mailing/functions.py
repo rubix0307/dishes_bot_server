@@ -8,19 +8,17 @@ from config import ADMIN_ID, GROUG_ID, MEDIA_PATH, MEDIA_URL
 from instagrapi import Client
 
 from functions import get_mailing_data
-
+from config import instagram_user, instagram_pass
 
 def instagram_mail(caption, photos_path: list[Path]):
-    user = 'ukrainian.goods'
-    password = 'qazwsxedcrfvtgbyhn9033'
 
     cl = Client()
     try:
-        sessionn_id = open(f'sessions/{user}.txt', 'r').read()
+        sessionn_id = open(f'sessions/{instagram_user}.txt', 'r').read()
         cl.login_by_sessionid(sessionn_id)
     except:
-        cl.login(user, password)
-        open(f'sessions/{user}.txt', 'w').write(cl.sessionid)
+        cl.login(instagram_user, instagram_pass)
+        open(f'sessions/{instagram_user}.txt', 'w').write(cl.sessionid)
 
     cl.album_upload(
         paths= photos_path,
