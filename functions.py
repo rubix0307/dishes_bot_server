@@ -725,12 +725,12 @@ def get_by_query_text_min(query_text, start, max_dishes):
             ''')
     return data_list
 
-def get_data_by_query_text(query_text, start, max_dishes, is_personal_chat: bool = False, **kwargs):
+def get_data_by_query_text(search_text, start, max_dishes, is_personal_chat: bool = False, **kwargs):
     
     if not is_personal_chat:
-        data_list = get_by_query_text_min(query_text, start, max_dishes)
+        data_list = get_by_query_text_min(search_text, start, max_dishes)
     else:
-        data_list = get_by_query_text(query_text, start, max_dishes)
+        data_list = get_by_query_text(search_text, start, max_dishes)
     return data_list
 
 
@@ -801,7 +801,7 @@ def get_mailing_data(castom_dish_id: int = None):
         try:
             return article, len(mailing_ids)
         except:
-            return article, 0
+            return article, -1
     except:
         pass
 

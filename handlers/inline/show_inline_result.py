@@ -26,11 +26,12 @@ async def main(query: types.InlineQuery):
     data = {
         'query': query,
         'user_id': query.from_user.id,
-        'query_text': get_normal_form(query.query),
+        'query_text': query.query,
         'max_dishes': max_dishes,
         'offset': offset,
         'start': start,
         'is_personal_chat': True if query._values['chat_type'] == 'private' else False,
+        'search_text': get_normal_form(query.query)
     }
 
     if filters['favorites'] in query.query.lower():
