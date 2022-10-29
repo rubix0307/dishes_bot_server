@@ -18,3 +18,9 @@ MEDIA_URL = 'https://obertivanie.com/bot_images/'
 MEDIA_PATH = '/var/www/admin/www/obertivanie.com/bot_images/'
 BOT_URL = 'https://t.me/best_recipe_bot'
 
+
+NAKRUKA_KEY = 'ca5a2c41f083f39ea151f195f70ce034'
+
+
+
+
