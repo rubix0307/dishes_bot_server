@@ -21,8 +21,9 @@ db_password = os.environ['db_password']
 instagram_user = os.environ['instagram_user']
 instagram_pass = os.environ['instagram_pass']
 
-
-
+DEBUG = os.path.exists('DEBUG')
+if DEBUG:
+    print(f'🛑 {DEBUG=}')
 
 
 

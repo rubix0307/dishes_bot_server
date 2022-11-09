@@ -158,24 +158,27 @@ class Article:
     def get_description(self):
         return f'Порций: {self.serving} | {self.cooking_time} | {self.kilocalories} ккал{br}{self.categories}' if self.id > 0 else '😢'
 
-    def get_message_text(self, show_preview: bool = True):
+    def get_message_text(self, show_preview: bool = True, is_send_instagram=False):
 
         if not MEDIA_URL in self.preview:
             self.preview = MEDIA_URL + self.preview
 
-        message_text = f'''{hide_link(self.preview) if show_preview else ''} 
-            {self.title}
-            {self.get_description()}
-            {hcode(f'*калорийность для сырых продуктов')}
+        if not is_send_instagram:
+            message_text = f'''{hide_link(self.preview) if show_preview else ''} 
+                {self.title}
+                {self.get_description()}
+                {hcode(f'*калорийность для сырых продуктов')}
 
-            {self.ingredients}
+                {self.ingredients}
 
-            {f'🧾 Как готовить:{br}{self.recipe}' if not self.is_mailing else f''}
+                {f'🧾 Как готовить:{br}{self.recipe}' if not self.is_mailing else f''}
 
 
-            {hlink(f'📖 Книга рецептов', BOT_URL) if not self.is_mailing else
-            hlink(f'Рецепт смотрите в боте{br}по кнопке ниже ⬇️{br*3}📖 Книга рецептов', f"{BOT_URL}?start=get_id={self.id}")}
-        ''' 
+                {hlink(f'📖 Книга рецептов', BOT_URL) if not self.is_mailing else
+                hlink(f'Рецепт смотрите в боте{br}по кнопке ниже ⬇️{br*3}📖 Книга рецептов', f"{BOT_URL}?start=get_id={self.id}")}
+            '''
+        else:
+            message_text = f'{self.title}{br}{self.get_description()}{br}📌 Этот и другие рецепты смотрите в шапке профиля'
         return message_text.replace(' '*12,'').replace(br*4, br*2) if self.id > 0 else 'Похоже, тут ничего не найдено'
 
 
