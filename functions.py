@@ -174,8 +174,8 @@ class Article:
                 {f'🧾 Как готовить:{br}{self.recipe}' if not self.is_mailing else f''}
 
 
-                {hlink(f'📖 Книга рецептов', BOT_URL) if not self.is_mailing else
-                hlink(f'Рецепт смотрите в боте{br}по кнопке ниже ⬇️{br*3}📖 Книга рецептов', f"{BOT_URL}?start=get_id={self.id}")}
+                {hlink(f'📖 Книга рецептов', f'{BOT_URL}?start=get_id={self.id}') if not self.is_mailing else
+                hlink(f'Рецепт смотрите в боте{br}по кнопке ниже ⬇️{br*3}📖 Книга рецептов', f'{BOT_URL}?start=get_id={self.id}')}
             '''
         else:
             message_text = f'{self.title}{br}{self.get_description()}{br}📌 Этот и другие рецепты смотрите в шапке профиля'
