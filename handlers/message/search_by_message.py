@@ -25,6 +25,12 @@ async def main_def(message: types.Message):
                 pass
             
             try:
+                await update_last_message(message, castom_message_id=message.message_id + 1)
+    
+            finally:
+                user_activity_record(user.id, dish_id, text)
+
+            try:
                 data = get_data_dish(dish_id)
             except:
                 await message.answer('Я вас не понял.', reply_markup=InlineKeyboardMarkup().add(get_home_button()))
@@ -34,14 +40,8 @@ async def main_def(message: types.Message):
                 article.preview = MEDIA_URL + data['local_photo']
             except:
                 pass
-                
-            try:
-                await update_last_message(message, castom_message_id=message.message_id + 1)
-                await message.answer(reply_markup=article.get_markup(), text=article.get_message_text(), parse_mode='html')
-    
-            finally:
-                user_activity_record(user.id, dish_id, text)
-                return
+            await message.answer(reply_markup=article.get_markup(), text=article.get_message_text(), parse_mode='html')
+            return
 
         elif not BOT_URL in text:
             title = f'Блюдо содержит "{text.lower()}"'

@@ -67,28 +67,32 @@ async def mailing_dishe(castom_dish_id: int = None):
             [media.attach_photo(types.InputFile('images/' + photo), article.title) for photo in phs]
             photos = ['images/' + photo for photo in phs]
 
-        show_preview = False
-        try:
-            if len(photos) > 1:
-                await bot.send_media_group(
-                    media=media,
-                    protect_content=True,
-                    chat_id=GROUG_ID,
-                    disable_notification=DEBUG,
-                )
-            else:
-                show_preview = True
-        except TypeError:
-            show_preview = True
 
-        await bot.send_message(
-            text=article.get_message_text(show_preview=show_preview),
-            reply_markup=article.get_markup(),
-            parse_mode='html',
-            chat_id=GROUG_ID,
-            disable_notification=DEBUG,
-            disable_web_page_preview=True,
-        )
+        if not DEBUG:
+            show_preview = False
+            try:
+                if len(photos) > 1:
+                    await bot.send_media_group(
+                        media=media,
+                        protect_content=True,
+                        chat_id=GROUG_ID,
+                        disable_notification=DEBUG,
+                    )
+                else:
+                    show_preview = True
+            except TypeError:
+                show_preview = True
+
+
+            
+            await bot.send_message(
+                text=article.get_message_text(show_preview=show_preview),
+                reply_markup=article.get_markup(),
+                parse_mode='html',
+                chat_id=GROUG_ID,
+                disable_notification=DEBUG,
+                disable_web_page_preview=True,
+            )
 
         try:
             instagram_text = article.get_message_text(is_send_instagram=True)
