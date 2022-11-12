@@ -56,7 +56,7 @@ def get_home_button(text: str = '⭕️ Главная страница ⭕️')
 def get_back_to_inline(button_text: str = f'↪️ Назад', query_text: str = ''):
     return InlineKeyboardButton(
         text=button_text,
-        switch_inline_query_current_chat=query_text[:26],
+        switch_inline_query_current_chat=query_text,
     )
 
 

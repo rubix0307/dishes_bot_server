@@ -4,7 +4,6 @@ from aiogram.utils.exceptions import MessageToDeleteNotFound
 
 from app import dp
 from config import MEDIA_URL
-from db.functions import sql
 from functions import Article, get_data_dish, get_fav_ids, update_last_message, user_activity_record
 
 

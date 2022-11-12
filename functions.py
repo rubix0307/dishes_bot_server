@@ -129,7 +129,7 @@ def insert_ad(offset, answer, query_text):
 
 class Article:
 
-    def __init__(self, data, callback_data, user_id=0, is_mailing=False):
+    def __init__(self, data, callback_data=None, user_id=0, is_mailing=False):
         self.id = data['id']
         self.title = data['title']  
         self.serving = data['serving']
@@ -143,12 +143,22 @@ class Article:
         self.categories = data['categories'].capitalize() if data['categories'] else ''
         self.ingredients = data['ingredients']
 
+
+        if callback_data:
+            self.callback_data = callback_data
+        else:
+            self.callback_data = {
+                'id': data['id'],
+                'fav': int(data['id'] in get_fav_ids(user_id)),
+                'query': '',
+                'num_ph': 0,
+            }
         try:
             self.preview = data['photos'].split('\n')[callback_data['num_ph']]
         except:
-            self.preview = edit_preview(call_data=callback_data, next_photo=False, get_url=True)
+            self.preview = edit_preview(call_data=self.callback_data, next_photo=False, get_url=True)
 
-        self.callback_data = callback_data
+        
 
         self.is_mailing = is_mailing
         self.user_id = user_id
@@ -163,28 +173,39 @@ class Article:
         if not MEDIA_URL in self.preview:
             self.preview = MEDIA_URL + self.preview
 
+        
+
         if not is_send_instagram:
-            message_text = f'''{hide_link(self.preview) if show_preview else ''} 
-                {self.title}
-                {self.get_description()}
-                {hcode(f'*калорийность для сырых продуктов')}
-
-                {self.ingredients}
-
-                {f'🧾 Как готовить:{br}{self.recipe}' if not self.is_mailing else f''}
-
-
-                {hlink(f'📖 Книга рецептов', f'{BOT_URL}?start=get_id={self.id}') if not self.is_mailing else
-                hlink(f'Рецепт смотрите в боте{br}по кнопке ниже ⬇️{br*3}📖 Книга рецептов', f'{BOT_URL}?start=get_id={self.id}')}
-            '''
+            lines = [
+                hide_link(self.preview) if show_preview else '',
+                self.title,
+                self.get_description(),
+                hcode(f'*калорийность для сырых продуктов'),
+                br,
+                self.ingredients,
+                br,
+                f'🧾 Как готовить:{br}{self.recipe}' if not self.is_mailing else f'',
+                br,
+                hlink(f'📖 Книга рецептов', f'{BOT_URL}?start=get_id={self.id}'),
+            ]
         else:
-            message_text = f'{self.title}{br}{self.get_description()}{br}📌 Этот и другие рецепты смотрите в шапке профиля'
-        return message_text.replace(' '*12,'').replace(br*4, br*2) if self.id > 0 else 'Похоже, тут ничего не найдено'
+            lines = [
+                self.title,
+                self.get_description(),
+                br,
+                self.ingredients,
+                br,
+                '📌 Этот и другие рецепты смотрите в шапке профиля'
+            ]
+
+        
+        message_text = br.join(lines)
+        return message_text if self.id > 0 else 'Похоже, тут ничего не найдено'
 
 
 
         
-    def get_markup(self):
+    def get_markup(self, min_markup=False):
         
         markup = InlineKeyboardMarkup(row_width=8)
         
@@ -195,10 +216,15 @@ class Article:
             ))
             return markup
 
+
+        home = get_home_button(text='🏡 На главную')
+        query = get_back_to_inline(query_text=self.callback_data['query'])
+
         if not self.callback_data['id'] < 1:
 
             photos = self.get_nav_photo()
             fav = self.get_fav_button()
+            
 
             try:
                 markup.add(*photos)
@@ -206,54 +232,22 @@ class Article:
                 pass
 
             markup.add(fav)
-            markup.add(get_home_button(text='🏡 На главную'), get_back_to_inline(query_text=self.callback_data['query']))
-
-
+            if min_markup:
+                markup.add(home)
+            else:
+                markup.add(home, query)
 
 
             # admin mailing
             if get_user_role(self.user_id) == 2:
                 try:
-
-                    all_mailing_dishe = sql(f'SELECT DISTINCT view FROM mailing WHERE dish_id = {self.id}')
-                    all_count_mails = sql(f'SELECT COUNT(*) as count FROM `mailing`')[0]['count']
-
-                    data_mailing = {'text': f'✅ Добавить в рассылку ({all_count_mails})',
-                                    'callback_data': mailing.new(
-                                        dish_id=self.id, 
-                                        add=1,
-                                        query_text=self.callback_data['query']
-                                        )
-                                    } 
-
-                    if all_mailing_dishe:
-                        view = all_mailing_dishe[0]['view']
-                        if not view:
-                            data_mailing = {'text': f'🛑 Убрать из рассылки ({all_count_mails})',
-                                            'callback_data': mailing.new(
-                                                dish_id=self.id,
-                                                add=0,
-                                                query_text=self.callback_data['query']
-                                                )
-                                            }
-                           
-                    send_now = InlineKeyboardButton('🆕 Отправить сейчас', callback_data=mail_now.new(dish_id=self.id))
-                    add_in_mailing = InlineKeyboardButton(**data_mailing)
-                    markup.add(add_in_mailing, send_now)
-
+                    markup.add(*self.get_mailing_buttons())
                 except:
                     pass
 
 
-            # add_mailing = InlineKeyboardButton(
-            #             text='Добавить в рассылку',
-            #             callback_data=add_mailing_menu.new(
-            #                 dish_id=self.id
-            #             )
-            #         )
-
         else:
-            markup.add(get_home_button(text='🏡 На главную'), get_back_to_inline(query_text=self.callback_data['query']))
+            markup.add(home, query)
         
         return markup
     
@@ -309,7 +303,37 @@ class Article:
         return InlineKeyboardButton(text=text,
             callback_data=edit_fav_by_id_call_menu.new(**self.callback_data))
         
+    def get_mailing_buttons(self):
+        try:
 
+            all_mailing_dishe = sql(f'SELECT DISTINCT view FROM mailing WHERE dish_id = {self.id}')
+            all_count_mails = sql(f'SELECT COUNT(*) as count FROM `mailing`')[0]['count']
+
+            data_mailing = {'text': f'✅ Добавить в рассылку ({all_count_mails})',
+                            'callback_data': mailing.new(
+                                dish_id=self.id, 
+                                add=1,
+                                query_text=self.callback_data['query']
+                                )
+                            } 
+
+            if all_mailing_dishe:
+                view = all_mailing_dishe[0]['view']
+                if not view:
+                    data_mailing = {'text': f'🛑 Убрать из рассылки ({all_count_mails})',
+                                    'callback_data': mailing.new(
+                                        dish_id=self.id,
+                                        add=0,
+                                        query_text=self.callback_data['query']
+                                        )
+                                    }
+                
+            send_now = InlineKeyboardButton('🆕 Отправить сейчас', callback_data=mail_now.new(dish_id=self.id))
+            add_in_mailing = InlineKeyboardButton(**data_mailing)
+            return [add_in_mailing, send_now]
+                
+        except:
+            pass
 
     def get_inline_query_result(self) -> types.InlineQueryResultArticle:
         return types.InlineQueryResultArticle(
