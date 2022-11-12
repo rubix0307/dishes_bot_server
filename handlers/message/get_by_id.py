@@ -48,8 +48,11 @@ async def show_dish(message: types.Message):
 
     try:
         await update_last_message(message, castom_message_id=message.message_id + 1)
-        await message.answer(reply_markup=article.get_markup(), text=article.get_message_text(), parse_mode='html')
-    
+
+        try:
+            await message.answer(reply_markup=article.get_markup(), text=article.get_message_text(), parse_mode='html')
+        except ValueError as e:
+            await message.answer(reply_markup=article.get_markup(clear_query=True), text=article.get_message_text(), parse_mode='html')
     finally:
         user_activity_record(user.id, dish_id, query_text)
     

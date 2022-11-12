@@ -8,7 +8,6 @@ from config import BOT_URL, MEDIA_URL
 from db.functions import sql
 from functions import (Article, get_data_dish, get_fav_ids, get_home_button,
                        update_last_message, user_activity_record)
-from . import get_by_id
 
 @dp.message_handler()
 async def main_def(message: types.Message):

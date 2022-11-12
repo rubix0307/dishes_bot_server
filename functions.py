@@ -205,7 +205,7 @@ class Article:
 
 
         
-    def get_markup(self, min_markup=False):
+    def get_markup(self, clear_query=False):
         
         markup = InlineKeyboardMarkup(row_width=8)
         
@@ -218,24 +218,32 @@ class Article:
 
 
         home = get_home_button(text='🏡 На главную')
-        query = get_back_to_inline(query_text=self.callback_data['query'])
+        query = get_back_to_inline(query_text=(self.callback_data['query'] if not clear_query else ''))
 
         if not self.callback_data['id'] < 1:
+            try:
+                photos = self.get_nav_photo()
+                markup.add(*photos)
 
-            photos = self.get_nav_photo()
-            fav = self.get_fav_button()
+            except Exception as e:
+                try:
+                    self.callback_data['query'] = ''
+                    photos = self.get_nav_photo()
+                    markup.add(*photos)
+                except TypeError:
+                    pass
+
             
 
             try:
-                markup.add(*photos)
-            except TypeError:
-                pass
+                fav = self.get_fav_button()
+            except Exception as e:
+                print()
+
+            
 
             markup.add(fav)
-            if min_markup:
-                markup.add(home)
-            else:
-                markup.add(home, query)
+            markup.add(home, query)
 
 
             # admin mailing
