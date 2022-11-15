@@ -24,7 +24,6 @@ def sql(sql:str, database='bot', commit=False):
                 return cursor.fetchall()
                 
     except Exception as ex:
-        print(ex)
         return False
 
 def get_fav_dish_by_user(user_id, is_get_fav_ids = False):

@@ -1,16 +1,22 @@
+import datetime
 import os
-from pathlib import Path
 import random
+from pathlib import Path
 
 import requests
 from aiogram import types
-from aiogram.utils.exceptions import ChatNotFound
-from app import bot
-from config import ADMIN_ID, GROUG_ID, MEDIA_PATH, MEDIA_URL, NAKRUKA_KEY
+from aiogram.types.inline_keyboard import (InlineKeyboardButton,
+                                           InlineKeyboardMarkup)
+from aiogram.utils.exceptions import ChatNotFound, BotBlocked
+from aiogram.utils.markdown import *
 from instagrapi import Client
 
-from functions import get_mailing_data
-from config import instagram_user, instagram_pass, DEBUG
+from app import bot
+from config import (ADMIN_ID, DEBUG, GROUG_ID, GROUP_LINK, MEDIA_PATH, MEDIA_URL,
+                    NAKRUKA_KEY, instagram_pass, instagram_user)
+from db.functions import sql
+from functions import get_mailing_data, update_last_message
+from markups import get_home_button
 
 br = '\n'
 
@@ -117,3 +123,50 @@ async def mailing_dishe(castom_dish_id: int = None):
     except Exception as e:
         print(e)
         pass
+
+
+async def subscribe_to_group(all=False):
+    all_users = sql(f'SELECT * FROM users')
+
+            
+    caption = f'''Чудесный шанс: подпишись на наш {hlink('канал', GROUP_LINK)} и получай каждый день ещё больше идей рецептов, ещё больше блюд! '''
+    
+    markup = InlineKeyboardMarkup()
+    markup.add(InlineKeyboardButton(text='Присоединиться', url=GROUP_LINK))
+    now = datetime.datetime.now()
+    date = f'{now.year}-{now.month}-{now.day}'
+    photo = open(f'{MEDIA_PATH}default/ph_group.jpg', 'rb').read() if not DEBUG else open(f'images/ph_group.jpg', 'rb').read()
+    
+    mails = 0
+    errors = 0
+    for data in (all_users if not DEBUG else [{'user_id' : ADMIN_ID}]):
+        user_id = data['user_id']
+        try:
+            send_message_data = await bot.send_photo(
+                chat_id=user_id,
+                photo=photo,
+                caption=caption,
+                reply_markup=markup,
+                protect_content=True,
+                disable_notification=True,
+                parse_mode='html'
+            )
+            sql(f'''UPDATE users SET is_active = '1' ''')
+            is_update = sql(f'''INSERT INTO `mailing_user`(`user_id`, `date`) VALUES ({user_id},'{date}')''', commit=True)
+            if not is_update:
+                sql(f'''UPDATE mailing_user SET date = '{date}' WHERE user_id = {user_id}; ''', commit=True)
+            
+            mails += 1
+        except:
+            sql(f'''UPDATE users SET is_active = '0' WHERE user_id = {user_id};''', commit=True)
+            errors += 1
+            continue
+
+
+    await bot.send_message(chat_id=ADMIN_ID, text=f'Рассылка о подписке на группу{br}Отправлено: {mails}{br}Не отправлено: {errors}')
+        # print(send_message_data)
+
+        # last_message = sql(f'SELECT message_id FROM users_messages WHERE user_id = {user_id}')[0]['message_id']
+        # await update_last_message({'from_user':{'id':user_id}}, castom_message_id=last_message + 1)
+        
+

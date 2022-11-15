@@ -479,33 +479,38 @@ def get_blank_data(id=-1, title='К сожалению, ничего не най
     return data_list
 
 
-async def update_last_message(message: types.Message, castom_message_id = None):
-
-    user = message.from_user
-
+async def update_last_message(message: types.Message, castom_user=None, castom_message_id = None):
+    if not castom_user:
+        try:
+            user = message['from_user']
+        except KeyError:
+            user = message.from_user
+        
+    else:
+        user = castom_user
 
     if not castom_message_id:
         message_id = message.message_id
     else:
         message_id = castom_message_id
 
-    last_message = sql(f'SELECT message_id FROM users_messages WHERE user_id = {user.id}')
+    last_message = sql(f'SELECT message_id FROM users_messages WHERE user_id = {user["id"]}')
     
     if not len(last_message):
-        sql(f'INSERT INTO `users_messages`(`user_id`, `message_id`) VALUES ({user.id},{message_id})', commit=True)
+        sql(f'INSERT INTO `users_messages`(`user_id`, `message_id`) VALUES ({user["id"]},{message_id})', commit=True)
         last_message = [{'message_id': message_id}]
 
     elif not message_id == last_message[0]['message_id']:
         try:
             try:
                 await bot.delete_message(
-                        chat_id=user.id,
+                        chat_id=user["id"],
                         message_id=last_message[0]['message_id']
                     )
             except:
                 pass
         finally:
-            sql(f'UPDATE users_messages SET message_id={message_id} WHERE user_id = {user.id}', commit=True)
+            sql(f'UPDATE users_messages SET message_id={message_id} WHERE user_id = {user["id"]}', commit=True)
 
 
 def get_call_data(callback_data: dict) -> dict:
@@ -805,7 +810,6 @@ def register_user(data):
             "{data.from_user.url}",
             "{data.from_user.username}"
         )'''
-
     sql(sql_query, commit=True)
 
 

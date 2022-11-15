@@ -3,7 +3,7 @@ from aiogram.types.inline_keyboard import (InlineKeyboardButton,
                                            InlineKeyboardMarkup)
 from app import bot, dp
 from db.functions import sql
-from functions import get_home_button, get_home_page
+from functions import get_home_button, get_home_page, update_last_message
 from markups import call_filters, filters, show_menu
 
 
@@ -29,10 +29,14 @@ async def show_dish(call: types.CallbackQuery, callback_data: dict()):
             await call.message.edit_text(**message_data)
         
         except Exception as ex:
-            await bot.edit_message_text(
-                inline_message_id=call.inline_message_id,
-                **message_data,
-            )
+            try:
+                await bot.edit_message_text(
+                    inline_message_id=call.inline_message_id,
+                    **message_data,
+                )
+            except:
+                await bot.send_message(chat_id=user.id, **message_data,)
+                await update_last_message(call, castom_message_id=call.message.message_id + 1)
 
         finally:
             await call.answer()
