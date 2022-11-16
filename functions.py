@@ -884,9 +884,13 @@ def get_date() -> str:
 
 async def you_very_active(bot: Bot, message: types.Message, count_activity: int) -> None:
     user = message.from_user
+    await update_last_message(message, castom_message_id=message.message_id + 1)
+    await message.delete()
     await message.answer(
         text=f'''Сегодня вы слишком активны. Попробуйте попозже{br*2}{hlink('Связь с администратором', BUY_AD_URL)}''',
-        reply_markup=InlineKeyboardMarkup().add(get_home_button()))
+        reply_markup=InlineKeyboardMarkup().add(get_home_button()),
+        parse_mode='html',
+        )
     await bot.send_message(chat_id=ADMIN_ID, text=f'Слишком активный пользователь {user.id} [{count_activity}]')
 
 
