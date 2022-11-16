@@ -18,10 +18,7 @@ br = '\n'
 @dp.message_handler(filters.Text(contains=['get_id']))
 async def show_dish(message: types.Message):
 
-    try:
-        await message.delete()
-    except MessageToDeleteNotFound:
-        pass
+    
 
     user = message.from_user
     
@@ -75,4 +72,10 @@ async def show_dish(message: types.Message):
             await message.answer(reply_markup=article.get_markup(clear_query=True), text=article.get_message_text(), parse_mode='html')
     finally:
         user_activity_record(user.id, dish_id, query)
+        
+        
+        try:
+            await message.delete()
+        except MessageToDeleteNotFound:
+            pass
     

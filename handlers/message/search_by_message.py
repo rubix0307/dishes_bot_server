@@ -1,15 +1,14 @@
-import datetime
+
 from aiogram import types
 from aiogram.types.inline_keyboard import (InlineKeyboardButton,
                                            InlineKeyboardMarkup)
-from aiogram.utils.exceptions import MessageToDeleteNotFound
-from aiogram.utils.markdown import hlink
 
-from app import dp, bot
-from config import ADMIN_ID, BOT_URL, BUY_AD_URL, MEDIA_URL
+from app import bot, dp
+from config import BOT_URL, MEDIA_URL
 from db.functions import sql
-from functions import (Article, get_data_dish, get_date, get_fav_ids, get_home_button,
-                       update_last_message, user_activity_record, you_very_active)
+from functions import (Article, get_data_dish, get_date,
+                       get_home_button, update_last_message,
+                       user_activity_record, you_very_active)
 
 br = '\n'
 
