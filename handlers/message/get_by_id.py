@@ -1,12 +1,20 @@
-from aiogram import types
+import datetime
+
+from aiogram import Bot, types
 from aiogram.dispatcher import filters
+from aiogram.types.inline_keyboard import (InlineKeyboardButton,
+                                           InlineKeyboardMarkup)
 from aiogram.utils.exceptions import MessageToDeleteNotFound
+from aiogram.utils.markdown import hlink
 
-from app import dp
-from config import MEDIA_URL
-from functions import Article, get_data_dish, get_fav_ids, update_last_message, user_activity_record
+from app import bot, dp
+from config import ADMIN_ID, BUY_AD_URL, MEDIA_URL
+from db.functions import sql
+from functions import (Article, get_data_dish, get_date, get_fav_ids,
+                       update_last_message, user_activity_record, you_very_active)
+from markups import get_home_button
 
-
+br = '\n'
 @dp.message_handler(filters.Text(contains=['get_id']))
 async def show_dish(message: types.Message):
 
@@ -16,9 +24,21 @@ async def show_dish(message: types.Message):
         pass
 
     user = message.from_user
-    query = message.text
     
+    try:
 
+        today_activity = sql(f'''
+            SELECT COUNT(*) as `count` FROM `users_actions` 
+            WHERE user_id = {user.id} AND time_at = "{get_date()}";''')
+        count_activity = today_activity[0]['count']
+
+        if count_activity >= 100:
+            await you_very_active(bot, message, count_activity)
+            return
+    except:
+        pass
+
+    query = message.text
     text_data = query.split('&')
     dish_id = int(text_data[0].split('=')[1])
 

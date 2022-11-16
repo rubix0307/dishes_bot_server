@@ -1,9 +1,10 @@
 import copy
+import datetime
 import re
 import time
 
 import pymorphy2
-from aiogram import types
+from aiogram import Bot, types
 from aiogram.types.inline_keyboard import (InlineKeyboardButton,
                                            InlineKeyboardMarkup)
 from aiogram.utils.markdown import *
@@ -874,6 +875,25 @@ def get_normal_form(text: str):
     normal_form = [morph.parse(i)[0].normal_form for i in text.split()]
 
     return ' '.join(normal_form)
+
+
+def get_date() -> str:
+    now = datetime.datetime.now()
+    return f'{now.year}-{now.month}-{now.day}'
+
+
+async def you_very_active(bot: Bot, message: types.Message, count_activity: int) -> None:
+    user = message.from_user
+    await message.answer(
+        text=f'''Сегодня вы слишком активны. Попробуйте попозже{br*2}{hlink('Связь с администратором', BUY_AD_URL)}''',
+        reply_markup=InlineKeyboardMarkup().add(get_home_button()))
+    await bot.send_message(chat_id=ADMIN_ID, text=f'Слишком активный пользователь {user.id} [{count_activity}]')
+
+
+
+
+
+
 
 
 
