@@ -3,7 +3,7 @@ from aiogram import types
 
 from app import dp, bot
 from db.functions import sql
-from functions import get_home_page, register_user, update_last_message
+from functions import get_home_page, register_user, update_last_message, user_activity_record
 
 
 @dp.message_handler(state='*', commands=['start'])
@@ -40,6 +40,9 @@ async def main_def(message: types.Message):
 
 
     
-    await message.delete()
-    await message.answer(**data_answer)
-    await update_last_message(message, castom_message_id = message.message_id + 1)
+    
+    finally:
+        await message.delete()
+        await message.answer(**data_answer)
+        await update_last_message(message, castom_message_id = message.message_id + 1)
+        user_activity_record(user.id, None, message.text)
