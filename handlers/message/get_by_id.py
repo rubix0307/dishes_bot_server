@@ -54,5 +54,5 @@ async def show_dish(message: types.Message):
         except ValueError as e:
             await message.answer(reply_markup=article.get_markup(clear_query=True), text=article.get_message_text(), parse_mode='html')
     finally:
-        user_activity_record(user.id, dish_id, query_text)
+        user_activity_record(user.id, dish_id, query)
     
