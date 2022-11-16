@@ -590,7 +590,7 @@ def edit_preview(article=None, call_data=None, next_photo=False, get_url=False):
 
 
 
-def get_data_dish(id: int):
+def GET_DATA_DISH(id: int):
     if id > 0:
         sql_query = f'''
         SELECT SQL_CACHE  d.id, d.title, d.original_link, d.serving, d.cooking_time, d.kilocalories,d.protein, d.fats, d.carbohydrates, d.recipe, d.likes,
