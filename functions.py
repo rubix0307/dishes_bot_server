@@ -812,7 +812,12 @@ def register_user(data):
             "{data.from_user.url}",
             "{data.from_user.username}"
         )'''
-    sql(sql_query, commit=True)
+    is_add = sql(sql_query, commit=True)
+    try:
+        if not is_add:
+            open('register_user.txt', 'a').write(f'''{data}{br*4}''')
+    except:
+        pass
 
 
 
