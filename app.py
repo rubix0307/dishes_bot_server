@@ -36,7 +36,7 @@ if __name__ == '__main__':
     async def on_startup(dp): 
         asyncio.create_task(scheduler())
 
-    print('✅ bot is run')
+    print('bot is run')
     while 1:
         try:
             executor.start_polling(dp, on_startup=on_startup)

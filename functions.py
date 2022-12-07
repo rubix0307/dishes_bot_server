@@ -238,12 +238,13 @@ class Article:
 
             try:
                 fav = self.get_fav_button()
+                markup.add(fav)
             except Exception as e:
                 print()
 
             
 
-            markup.add(fav)
+            
             markup.add(home, query)
 
 
