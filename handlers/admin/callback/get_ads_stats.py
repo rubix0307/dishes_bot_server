@@ -18,8 +18,9 @@ async def get_ads_stats(call: types.CallbackQuery, callback_data: dict()):
     data_ads = sql(f'''
             SELECT came_from as name, COUNT(*) as count 
             FROM users
+            WHERE (came_from REGEXP '[^0-9]')
             GROUP BY came_from
-            ORDER BY count DESC;
+            ORDER BY count DESC
             ''')
 
     date = datetime.datetime.now()
@@ -31,7 +32,7 @@ async def get_ads_stats(call: types.CallbackQuery, callback_data: dict()):
     
     today_sum = sum([td['count'] for td in data_ads_today])
     markup = InlineKeyboardMarkup(row_width=3)
-    markup.add(*[get_home_button(f'from: {len(data_ads)}'), get_home_button(f'all: {all_user_count}'), get_home_button(f'''today: {today_sum}''')])
+    markup.add(*[get_home_button(f'FROM: {len(data_ads)}'), get_home_button(f'ALL: {all_user_count}'), get_home_button(f'''TODAY: {today_sum}''')])
 
     for ad in data_ads[:50]:
         name_ad = ad['name']

@@ -35,8 +35,8 @@ async def show_dish(call: types.CallbackQuery, callback_data: dict()):
                     **message_data,
                 )
             except:
-                await bot.send_message(chat_id=user.id, **message_data,)
-                await update_last_message(call, castom_message_id=call.message.message_id + 1)
+                answer = await bot.send_message(chat_id=user.id, **message_data,)
+                await update_last_message(call, castom_message_id=answer.message_id)
 
         finally:
             await call.answer()

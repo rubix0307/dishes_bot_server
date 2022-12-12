@@ -82,7 +82,7 @@ async def mailing_dishe(castom_dish_id: int = None):
                         media=media,
                         protect_content=True,
                         chat_id=GROUG_ID,
-                        disable_notification=DEBUG,
+                        disable_notification=True,
                     )
                 else:
                     show_preview = True
@@ -96,7 +96,7 @@ async def mailing_dishe(castom_dish_id: int = None):
                 reply_markup=article.get_markup(),
                 parse_mode='html',
                 chat_id=GROUG_ID,
-                disable_notification=DEBUG,
+                disable_notification=True,
                 disable_web_page_preview=True,
             )
 
@@ -126,10 +126,10 @@ async def mailing_dishe(castom_dish_id: int = None):
 
 
 async def subscribe_to_group(all=False):
-    all_users = sql(f'SELECT * FROM users')
+    all_users = sql(f'''SELECT * FROM `users` WHERE user_id NOT IN (SELECT user_id FROM `mailing_user`);''')
 
             
-    caption = f'''Чудесный шанс: подпишись на наш {hlink('канал', GROUP_LINK)} и получай каждый день ещё больше идей рецептов, ещё больше блюд! '''
+    caption = f'''⠀{br}Чудесный шанс: подпишись на наш {hlink('канал', GROUP_LINK)} и получай каждый день ещё больше идей рецептов, ещё больше блюд! '''
     
     markup = InlineKeyboardMarkup()
     markup.add(InlineKeyboardButton(text='Присоединиться', url=GROUP_LINK))
@@ -142,7 +142,7 @@ async def subscribe_to_group(all=False):
     for data in (all_users if not DEBUG else [{'user_id' : ADMIN_ID}]):
         user_id = data['user_id']
         try:
-            send_message_data = await bot.send_photo(
+            message_data = await bot.send_photo(
                 chat_id=user_id,
                 photo=photo,
                 caption=caption,
@@ -151,8 +151,8 @@ async def subscribe_to_group(all=False):
                 disable_notification=True,
                 parse_mode='html'
             )
-            sql(f'''UPDATE users SET is_active = '1' ''')
-            is_update = sql(f'''INSERT INTO `mailing_user`(`user_id`, `date`) VALUES ({user_id},'{date}')''', commit=True)
+            sql(f'''UPDATE `users` SET `is_active` = '1' WHERE `users`.`user_id` = {user_id};''')
+            is_update = sql(f'''INSERT INTO `mailing_user`(user_id, date, message_id) VALUES ({user_id},'{date}', {message_data.message_id})''', commit=True)
             if not is_update:
                 sql(f'''UPDATE mailing_user SET date = '{date}' WHERE user_id = {user_id}; ''', commit=True)
             
@@ -164,9 +164,6 @@ async def subscribe_to_group(all=False):
 
 
     await bot.send_message(chat_id=ADMIN_ID, text=f'Рассылка о подписке на группу{br}Отправлено: {mails}{br}Не отправлено: {errors}')
-        # print(send_message_data)
 
-        # last_message = sql(f'SELECT message_id FROM users_messages WHERE user_id = {user_id}')[0]['message_id']
-        # await update_last_message({'from_user':{'id':user_id}}, castom_message_id=last_message + 1)
         
 

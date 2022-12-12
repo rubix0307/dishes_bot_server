@@ -26,8 +26,8 @@ async def main_def(message: types.Message):
 
 
 
-    await message.answer('/web_app', reply_markup=InlineKeyboardMarkup().add(web_app))
-    await update_last_message(message, castom_message_id=message.message_id + 1)
+    answer = await message.answer('/web_app', reply_markup=InlineKeyboardMarkup().add(web_app))
+    await update_last_message(message, castom_message_id=answer.message_id)
     await message.delete()
 
 

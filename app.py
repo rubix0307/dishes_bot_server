@@ -10,6 +10,8 @@ import aioschedule
 
 
 
+
+
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot)
 
@@ -22,10 +24,9 @@ if __name__ == '__main__':
     from handlers import dp
     from mailing.functions import mailing_dishe
 
-    
-
     async def scheduler():
         aioschedule.every().day.at("08:30").do(mailing_dishe)
+        # aioschedule.every().day.at("19:30").do(subscribe_to_group)
         # aioschedule.every(1).seconds.do(mailing_dishe) # test
         while True:
             await aioschedule.run_pending()
@@ -33,7 +34,7 @@ if __name__ == '__main__':
 
 
 
-    async def on_startup(dp): 
+    async def on_startup(dp):
         asyncio.create_task(scheduler())
 
     print('bot is run')

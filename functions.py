@@ -32,9 +32,9 @@ def get_home_page(user_id:int=1) -> dict:
     markup.add(InlineKeyboardButton(text=f'🗂 По категориям', callback_data=show_menu.new(menu_name=call_filters['categories'])))
     markup.add(InlineKeyboardButton(text=f'🌍 Кухни мира 🌎', callback_data=show_menu.new(menu_name=call_filters['countries'])))
     markup.add(InlineKeyboardButton(text=f'🧾 Искать рецепт', switch_inline_query_current_chat=''))
-    markup.add(InlineKeyboardButton(text=f'👩‍👦‍👦 Перейти в групу 🆕', url='https://t.me/best_recipe_group'))
+    markup.add(InlineKeyboardButton(text=f'👩‍👦‍👦⠀Перейти в группу⠀🆕', url='https://t.me/+aIOTdrZd3504NGUy'))
 
-    
+     
     if get_user_role(user_id) == 2:
         markup.add(
             InlineKeyboardButton(text=f'🤖 Рассылка', switch_inline_query_current_chat=filters['mailing']),
@@ -814,10 +814,12 @@ def register_user(data):
         )'''
     is_add = sql(sql_query, commit=True)
     try:
-        if not is_add:
-            open('register_user.txt', 'a').write(f'''{data}{br*4}''')
+        if is_add:
+            return True
+        else:
+            return False
     except:
-        pass
+        return False
 
 
 
