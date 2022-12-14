@@ -19,7 +19,7 @@ def get_stats(num, max_users, successfully, errors, start_time, is_continue=True
 Не успешно: {len(errors)}
 Потрачено времени: {round(time.time() - start_time, 0)} сек
 
-{'Расслыка...' if is_continue else '✅ Рассылка окончена.'}
+{'Рассылка...' if is_continue else '✅ Рассылка окончена.'}
 '''
 
 @dp.message_handler(state='*', commands=['mails_ph'])
