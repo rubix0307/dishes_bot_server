@@ -1,36 +1,23 @@
 
 
 from aiogram import types
-
-from app import bot, dp
-from config import BOT_URL
-from aiogram.types.inline_keyboard import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types.inline_keyboard import (InlineKeyboardButton,
+                                           InlineKeyboardMarkup)
 from aiogram.types.web_app_info import WebAppInfo
+from aiogram.utils.markdown import hlink, hunderline, hbold
+from app import bot, dp
+from config import ADMIN_ID, BOT_URL
 from db.functions import sql
+from functions import update_last_message, user_activity_record
+from markups import call_filters, get_home_button, get_nothing_button
 
-from markups import get_home_button
+br = '\n'
 
 @dp.message_handler(state='*', commands=['contest'])
-async def contest(message: types.Message):
+async def contest(message: types.Message, is_callback=False):
     user_id = message.from_user.id
-    msg = f'''
-Конкурс на 50$!
-
-Условия по кнопке ниже
-
-Твоя ссылка:
-{BOT_URL}?start={user_id}
-
-Призы:
-1 - 25$
-2 - 15$
-3 - 10$
-
-ТОП 10 пригласивших:
-'''
-    markup = InlineKeyboardMarkup(row_width=3)
-    markup.add(InlineKeyboardButton('Условия', web_app=WebAppInfo(url='https://obertivanie.com/bot_images/web-app/contest/contest.html')))
-    markup.add(*[get_home_button(f'№'), get_home_button(f'участник'), get_home_button(f'''пригласил''')])
+    
+    
 
     contest_users = sql(f'''
 SELECT u2.user_id as id, u2.first_name as name, COUNT(*) as count 
@@ -40,7 +27,58 @@ WHERE NOT (u.came_from REGEXP '[^0-9]')
 GROUP BY u.came_from 
 ORDER BY count DESC''')
 
-    for num, user in enumerate(contest_users):
-        markup.add(*[get_home_button(f'''{f'Ты - {num + 1}' if user['id'] == user_id else num + 1 }'''), get_home_button(user['name']), get_home_button(user['count'])])
+    you = {
+        'pos': 0,
+        'count': 0,
+    }
+    for num, data in enumerate(contest_users):
+        if data['id'] == user_id:
+            you.update({
+                'pos': num +1,
+                'count': data['count'],
+            })
 
-    await message.answer(msg, reply_markup=markup, disable_web_page_preview=True)
+    
+
+    msg = f'''
+{hlink('Участвуйте в нашем конкурсе на призовой фонд 50 долларов!', BOT_URL + '?start=contest')}
+
+Пригласите как можно больше людей по своей реферальной ссылке и станьте победителем. 
+
+Обратите внимание, что участники, которые уже участвуют в конкурсе, не могут принять участие {hunderline('по вашей ссылке')}.
+
+Призовой фонд разделится следующим образом:
+1 место - 25 долларов
+2 место - 15 долларов
+3 место - 10 долларов
+
+Результаты будут объявлены 31.12.2022. Удачи!
+
+{f"Ты пригласил {you['count']} человек.{br}Статистика конкурса открывается только для участников в этом же меню" if not you['pos'] else f"Ты занимаешь {you['pos']} место{br}пригласил {you['count']} человек"},
+    
+Твоя реферальная ссылка
+{BOT_URL}?start={user_id}
+
+ТОП 10 пригласивших:'''
+
+    markup = InlineKeyboardMarkup(row_width=3)
+    if you['pos'] or user_id == ADMIN_ID:
+        if contest_users:
+            markup.add(*[get_nothing_button(f'№'), get_nothing_button(f'участник'), get_nothing_button(f'''пригласил''')])
+
+        for num, data in enumerate(contest_users[:10]):
+                markup.add(*[get_nothing_button(f'''{f'- {num + 1} - ' if data['id'] == user_id else num + 1 }'''), get_nothing_button(data['name'][:20]), get_nothing_button(data['count'])])
+
+
+    markup.add(get_home_button('🎄 На главную 🌟'))
+
+
+    if not is_callback:
+        answer = await message.answer(msg, reply_markup=markup, disable_web_page_preview=True, parse_mode='html')
+        user_activity_record(user_id, None, message.text)
+        await message.delete()
+    else:
+        answer = await bot.send_message(chat_id = user_id, text=msg, reply_markup=markup, disable_web_page_preview=True, parse_mode='html')
+        user_activity_record(user_id, None, call_filters['contest'])
+    await update_last_message(message, castom_message_id = answer.message_id)
+   

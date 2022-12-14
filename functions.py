@@ -24,6 +24,23 @@ def get_user_role(user_id) -> int:
         else:
             return 1
 
+
+async def check_start_photo(user_id):
+    try:
+        is_start_photo = bool(sql(f'''SELECT COUNT(*) as count FROM `start_messages` WHERE user_id = {user_id}''')[0]['count'])
+        if not is_start_photo:
+                photo = await bot.send_photo(chat_id=user_id, photo='https://obertivanie.com/bot_images/default/panda_sub.png', protect_content=True,
+                    reply_markup=InlineKeyboardMarkup().add(InlineKeyboardButton(
+                        text=f'👩‍👦‍👦⠀В группу⠀👨‍👩‍👧', 
+                        url='https://t.me/+aIOTdrZd3504NGUy'))
+                    )
+
+                time.sleep(0.2)
+                await bot.pin_chat_message(chat_id=user_id, message_id=photo.message_id)
+                sql(f'''INSERT INTO `start_messages`(`user_id`, `message_id`) VALUES ({user_id},{photo.message_id})''')
+    except:
+        pass
+
 def get_home_page(user_id:int=1) -> dict:
 
     text = 'Добро пожаловать в бот'
@@ -32,7 +49,8 @@ def get_home_page(user_id:int=1) -> dict:
     markup.add(InlineKeyboardButton(text=f'🗂 По категориям', callback_data=show_menu.new(menu_name=call_filters['categories'])))
     markup.add(InlineKeyboardButton(text=f'🌍 Кухни мира 🌎', callback_data=show_menu.new(menu_name=call_filters['countries'])))
     markup.add(InlineKeyboardButton(text=f'🧾 Искать рецепт', switch_inline_query_current_chat=''))
-    markup.add(InlineKeyboardButton(text=f'👩‍👦‍👦⠀Перейти в группу⠀🆕', url='https://t.me/+aIOTdrZd3504NGUy'))
+    markup.add(InlineKeyboardButton(text=f'👩‍👦‍👦 Наши группы 🆕', callback_data=show_menu.new(menu_name=call_filters['our_groups'])))
+    markup.add(InlineKeyboardButton(text=f'🎄 КОНКУРС НА 50$ 🌟', callback_data=show_menu.new(menu_name=call_filters['contest'])))
 
      
     if get_user_role(user_id) == 2:
@@ -179,7 +197,7 @@ class Article:
         if not is_send_instagram:
             lines = [
                 hide_link(self.preview) if show_preview else '',
-                self.title,
+                hlink(self.title.upper(), f'{BOT_URL}?start=get_id={self.id}'),
                 self.get_description(),
                 hcode(f'*калорийность для сырых продуктов'),
                 br,
@@ -187,7 +205,7 @@ class Article:
                 br,
                 f'🧾 Как готовить:{br}{self.recipe}' if not self.is_mailing else f'',
                 br,
-                hlink(f'📖 Книга рецептов', f'{BOT_URL}?start=get_id={self.id}'),
+                hlink(f'📖 КНИГА РЕЦЕПТОВ - лучший кулинарный бот', f'{BOT_URL}?start=get_id={self.id}'),
             ]
         else:
             lines = [
@@ -906,7 +924,25 @@ async def you_very_active(bot: Bot, message: types.Message, count_activity: int)
 
 
 
+async def our_groups(message: types.Message, is_callback=False):
+    user_id = message.from_user.id
 
+    markup = InlineKeyboardMarkup(row_width=3)
+    
+    markup.add(InlineKeyboardButton('📖 Книга рецептов 👩‍👦‍👦', url='https://t.me/+aIOTdrZd3504NGUy'))
+    markup.add(InlineKeyboardButton('📖 Лайфхаки кулинаров️️ 💡', url='https://t.me/+JKomHC4hlhQ2NTNi'))
+    markup.add(get_home_button('🎄 На главную 🌟'))
+
+
+    if not is_callback:
+        answer = await message.answer_photo(photo='https://obertivanie.com/bot_images/default/sub_to_group.png', protect_content=True,
+                reply_markup=markup, parse_mode='html')
+        user_activity_record(user_id, None, message.text)
+        await message.delete()
+    else:
+        answer = await bot.send_photo(photo='https://obertivanie.com/bot_images/default/sub_to_group.png', protect_content=True, chat_id = user_id, reply_markup=markup, parse_mode='html')
+        user_activity_record(user_id, None, call_filters['our_groups'])
+    await update_last_message(message, castom_message_id = answer.message_id)
 
 
 

@@ -41,7 +41,9 @@ call_filters = {
     'home': 'home',
     'countries': 'countries',
     'categories': 'categories',
-
+    'contest': 'contest',
+    'nothing': 'nothing',
+    'our_groups': 'our_groups',
 }
 
 
@@ -50,6 +52,12 @@ def get_home_button(text: str = '⭕️ Главная страница ⭕️')
     return InlineKeyboardButton(
         text=text,
         callback_data=show_menu.new(menu_name=call_filters['home'])
+    )
+
+def get_nothing_button(text: str = 'Ничего'):
+    return InlineKeyboardButton(
+        text=text,
+        callback_data=show_menu.new(menu_name=call_filters['nothing'])
     )
 
 

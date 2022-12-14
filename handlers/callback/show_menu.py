@@ -3,7 +3,8 @@ from aiogram.types.inline_keyboard import (InlineKeyboardButton,
                                            InlineKeyboardMarkup)
 from app import bot, dp
 from db.functions import sql
-from functions import get_home_button, get_home_page, update_last_message
+from functions import get_home_button, get_home_page, our_groups, update_last_message
+from handlers.message.contest import contest
 from markups import call_filters, filters, show_menu
 
 
@@ -13,6 +14,18 @@ async def show_dish(call: types.CallbackQuery, callback_data: dict()):
     highlight_symbol = '⭐️ '
     menu_name = callback_data['menu_name']
     user = call.from_user
+
+    if call_filters['contest'] in menu_name:
+        await contest(call, is_callback=True)
+        return
+    if call_filters['nothing'] in menu_name:
+        await call.answer()
+        return
+    if call_filters['our_groups'] in menu_name:
+        await our_groups(call, is_callback=True)
+        return
+
+
 
     if call_filters['home'] in menu_name:
 
