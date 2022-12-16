@@ -929,8 +929,8 @@ async def groups(message: types.Message, is_callback=False):
 
     markup = InlineKeyboardMarkup(row_width=3)
     
-    markup.add(InlineKeyboardButton('📖 Книга рецептов 👩‍👦‍👦', url='https://t.me/+aIOTdrZd3504NGUy'))
-    markup.add(InlineKeyboardButton('📖 Лайфхаки кулинаров️️ 💡', url='https://t.me/+JKomHC4hlhQ2NTNi'))
+    markup.add(InlineKeyboardButton('📖 Книга Рецептов 🔥', url='https://t.me/+aIOTdrZd3504NGUy'))
+    markup.add(InlineKeyboardButton('📖 Кулинарные Лайфхаки💡', url='https://t.me/+JKomHC4hlhQ2NTNi'))
     markup.add(get_home_button('🎄 На главную 🌟'))
 
 

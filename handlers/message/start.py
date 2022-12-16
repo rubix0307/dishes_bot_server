@@ -38,22 +38,23 @@ async def main_def(message: types.Message):
 
                 last_from = sql(f'''SELECT came_from FROM `users` WHERE user_id = {user.id}''')[0]
 
-                if last_from['came_from'] == start_parameter:
+                if last_from['came_from'] == came_from:
                     data_answer.update({'text':f'''{data_answer['text']}\n\n❗️ Вы уже были приглашены этим пользователем'''})
                     continue
 
-                elif last_from['came_from'] and last_from['came_from'].isdigit() and start_parameter.isdigit():
+                elif last_from['came_from'] and last_from['came_from'].isdigit() and came_from.isdigit():
                     data_answer.update({'text':f'''{data_answer['text']}\n\n❗️ Вы уже были приглашены другим пользователем'''})
                     continue
 
-                elif start_parameter == str(user.id):
+                elif came_from == str(user.id):
                     data_answer.update({'text':f'''{data_answer['text']}\n\n❗️ Вы не можете пригласить сами себя'''})
                     continue
 
                 
-
-                sql_query = f'''UPDATE `users` SET `came_from`='{came_from}' WHERE `user_id` = {user.id}'''
-                sql(sql_query, commit=True)
+                elif not last_from['came_from'].isdigit():
+                    sql_query = f'''UPDATE `users` SET `came_from`='{came_from}' WHERE `user_id` = {user.id}'''
+                    sql(sql_query, commit=True)
+                    continue
 
             elif start_parameter == call_filters['contest']:
                 await contest(message)
