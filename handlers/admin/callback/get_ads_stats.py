@@ -11,95 +11,74 @@ br = '\n'
 @dp.callback_query_handler(get_ads_stats_call_menu.filter())
 async def get_ads_stats(call: types.CallbackQuery, callback_data: dict()):
 
-    
-
-    all_user_count = sql(f'''SELECT COUNT(*) as count 
-            FROM users''')[0]['count']
-    data_ads = sql(f'''
-            SELECT came_from as name, COUNT(*) as count 
-            FROM users
-            WHERE (came_from REGEXP '[^0-9]')
-            GROUP BY came_from
-            ORDER BY count DESC
-            ''')
-
     date = datetime.datetime.now()
     date_today = f'{date.year}-{date.month}-{date.day}'
-    data_ads_today = sql(f'''SELECT came_from as name , COUNT(*) as count 
-            FROM users 
-            WHERE date = '{date_today}' 
-            GROUP BY came_from;''')
 
     l_day = date - datetime.timedelta(days=1)
     date_last_day = f'{l_day.year}-{l_day.month}-{l_day.day}'
-    data_ads_l_day = sql(f'''SELECT came_from as name , COUNT(*) as count 
-            FROM users 
-            WHERE date = '{date_last_day}' 
-            GROUP BY came_from;''')
 
+    data_ads = sql(f'''
+        SELECT u1.came_from as name, COUNT(*) as count,
+        (SELECT COUNT(*) as today FROM users as u2 WHERE u2.came_from = name AND date = '{date_today}') as today,
+        (SELECT COUNT(*) as today FROM users as u2 WHERE u2.came_from = name AND date = '{date_last_day}') as lastday
+
+                
+        FROM users as u1
+        WHERE (u1.came_from REGEXP '[^0-9]')
+        GROUP BY u1.came_from
+        ORDER BY count DESC;
+            ''')
+
+    data_ads_by_user_id = sql(f'''
+        SELECT u1.came_from as name, COUNT(*) as count,
+        (SELECT COUNT(*) as count FROM users as u2 WHERE NOT (u2.came_from REGEXP '[^0-9]') AND date = '{date_today}') as today,
+        (SELECT COUNT(*) as count FROM users as u2 WHERE NOT (u2.came_from REGEXP '[^0-9]') AND date = '{date_last_day}') as lastday        
+        FROM users as u1
+        WHERE NOT (u1.came_from REGEXP '[^0-9]')
+        ORDER BY count DESC;''')
     
-    today_sum = sum([td['count'] for td in data_ads_today])
-    l_sum = sum([td['count'] for td in data_ads_l_day])
+    data_ads_by_user_id[0]['name'] = 'contest'
+    data_ads.append(data_ads_by_user_id[0])
+
+    for num, f in enumerate(data_ads):
+        for num2, s in enumerate(data_ads):
+            if f['count'] > s['count']:
+                data_ads[num], data_ads[num2] = data_ads[num2], data_ads[num]
+
+    all_user_count = sum([d['count'] for d in data_ads])
+    t_sum = sum([d['today'] for d in data_ads])
+    l_sum = sum([d['lastday'] for d in data_ads])
+   
     markup = InlineKeyboardMarkup(row_width=4)
-    markup.add(*[get_home_button(f'FROM: {len(data_ads) + 1}'), get_home_button(f'ALL: {all_user_count}'), get_home_button(f'TODAY: {today_sum}'), get_home_button(f'LAST DAY: {l_sum}')])
+    markup.add(*[
+        get_home_button(f'FROM: {len(data_ads) + 1}'), 
+        get_home_button(f'ALL: {all_user_count}'), 
+        get_home_button(f'TDAY: {t_sum}'), 
+        get_home_button(f'LDAY: {l_sum}')])
 
     for ad in data_ads[:50]:
-        name_ad = ad['name']
+        name = ad['name']
         count = ad['count']
-        data = [get_home_button(name_ad), get_home_button(count)]
+        today = f'''+{ad['today']}''' if ad['today'] else 'ㅤ'
+        lastday = f'''+{ad['lastday']}''' if ad['lastday'] else 'ㅤ'
 
-        for today in data_ads_today:
-            name_ad_today = today['name']
-            count_today = today['count']
-            if name_ad == name_ad_today and count_today:
-                data.append(get_home_button(f'+{count_today}'))
-                break
-        if len(data) == 2:
-            data.append(get_home_button(f'⠀'))
-
-        for l_day in data_ads_l_day:
-            name_ad_l_day = l_day['name']
-            count_l_day = l_day['count']
-            if name_ad == name_ad_l_day and count_l_day:
-                data.append(get_home_button(f'+{count_l_day}'))
-                break
-        if len(data) == 3:
-            data.append(get_home_button(f'⠀'))
+        data = [
+            get_home_button(name),
+            get_home_button(count),
+            get_home_button(today),
+            get_home_button(lastday),
+            ]
 
         markup.add(*data)
     
 
-
-    all_self_user = sql(f'''SELECT COUNT(*) as count 
-            FROM users
-            WHERE NOT (came_from REGEXP '[^0-9]')
-            ''')[0]['count']
-
-    data_ads_today = sql(f'''SELECT COUNT(*) as count 
-            FROM users 
-            WHERE date = '{date_today}' AND NOT (came_from REGEXP '[^0-9]')''')
-
-    data_ads_last_day = sql(f'''SELECT COUNT(*) as count 
-            FROM users 
-            WHERE date = '{date_last_day}' AND NOT (came_from REGEXP '[^0-9]')''')
-        
-    markup.add(*[get_home_button('contest'),
-        get_home_button(f'{all_self_user}'),
-        get_home_button(f'''+{data_ads_today[0]['count']}'''),
-        get_home_button(f'''+{data_ads_last_day[0]['count']}''')
-    ])
-
     message_data = {
+        'chat_id': call.from_user.id,
         'text': f'Ads statistics',
+        'message_id': call.message.message_id,
         'reply_markup': markup,
         'parse_mode': 'html',
     }
 
-
-    await bot.edit_message_text(
-        chat_id=call.from_user.id,
-        message_id=call.message.message_id,
-        **message_data,
-    )
-
+    await bot.edit_message_text(**message_data)
     await call.answer()
