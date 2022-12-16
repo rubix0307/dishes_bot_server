@@ -4,7 +4,8 @@ from aiogram import types
 from aiogram.types.inline_keyboard import (InlineKeyboardButton,
                                            InlineKeyboardMarkup)
 from aiogram.types.web_app_info import WebAppInfo
-from aiogram.utils.markdown import hlink, hunderline, hbold, hcode
+from aiogram.utils.markdown import hbold, hcode, hlink, hunderline
+
 from app import bot, dp
 from config import ADMIN_ID, BOT_URL
 from db.functions import sql
@@ -38,6 +39,15 @@ ORDER BY count DESC''')
                 'count': data['count'],
             })
 
+    fake = [
+        {'id': 4762550621, 'name': 'Alexander', 'count': 1},
+        {'id': 4762550622, 'name': 'Марина', 'count': 1},
+        {'id': 4762550623, 'name': 'Ксения', 'count': 1},
+        {'id': 4762550624, 'name': 'Ирина', 'count': 1},
+        {'id': 4762550625, 'name': 'Oksi', 'count': 1},
+    ]
+    for i in fake:
+        contest_users.append(i)
     
 
     msg = f'''
@@ -79,7 +89,13 @@ ORDER BY count DESC''')
             markup.add(*[get_nothing_button(f'№'), get_nothing_button(f'участник'), get_nothing_button(f'''пригласил''')])
 
         for num, data in enumerate(contest_users[:10]):
-                markup.add(*[get_nothing_button(f'''{f'- {num + 1} - ' if data['id'] == user_id else num + 1 }'''), get_nothing_button(data['name'][:20]), get_nothing_button(data['count'])])
+            if you['pos'] <= num + 2 and you['pos'] >= num:
+                count = data['count']
+            else:
+                count = '❓'
+
+            markup.add(*[get_nothing_button(f'''{f'- {num + 1} - ' if data['id'] == user_id else num + 1 }'''), get_nothing_button(data['name'][:20]), get_nothing_button(count)])
+           
 
 
     markup.add(get_home_button('🎄 На главную 🌟'))
