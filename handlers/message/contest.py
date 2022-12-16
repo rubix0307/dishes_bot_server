@@ -9,7 +9,7 @@ from aiogram.utils.markdown import hbold, hcode, hlink, hunderline
 from app import bot, dp
 from config import ADMIN_ID, BOT_URL
 from db.functions import sql
-from functions import update_last_message, user_activity_record
+from functions import get_user_role, update_last_message, user_activity_record
 from markups import call_filters, get_home_button, get_nothing_button
 
 br = '\n'
@@ -17,7 +17,7 @@ br = '\n'
 @dp.message_handler(state='*', commands=['contest'])
 async def contest(message: types.Message, is_callback=False):
     user_id = message.from_user.id
-    
+    role_id = get_user_role(user_id)
     
 
     contest_users = sql(f'''
@@ -47,6 +47,9 @@ ORDER BY count DESC''')
         {'id': 4762550625, 'name': 'Oksi', 'count': 1},
     ]
     for i in fake:
+        if role_id == 2:
+            i['name'] = '🔻' + i['name']
+
         contest_users.append(i)
     
 
@@ -84,7 +87,8 @@ ORDER BY count DESC''')
 '''
 
     markup = InlineKeyboardMarkup(row_width=3)
-    if you['pos'] or user_id == ADMIN_ID:
+    
+    if you['pos'] or role_id == 2:
         if contest_users:
             markup.add(*[get_nothing_button(f'№'), get_nothing_button(f'участник'), get_nothing_button(f'''пригласил''')])
 
@@ -92,7 +96,7 @@ ORDER BY count DESC''')
             if you['pos'] <= num + 2 and you['pos'] >= num:
                 count = data['count']
             else:
-                count = '❓'
+                count = f'''- {data['count']} -''' if role_id == 2 else '❓'
 
             markup.add(*[get_nothing_button(f'''{f'- {num + 1} - ' if data['id'] == user_id else num + 1 }'''), get_nothing_button(data['name'][:20]), get_nothing_button(count)])
            
