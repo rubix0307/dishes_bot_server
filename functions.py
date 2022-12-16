@@ -49,7 +49,7 @@ def get_home_page(user_id:int=1) -> dict:
     markup.add(InlineKeyboardButton(text=f'🗂 По категориям', callback_data=show_menu.new(menu_name=call_filters['categories'])))
     markup.add(InlineKeyboardButton(text=f'🌍 Кухни мира 🌎', callback_data=show_menu.new(menu_name=call_filters['countries'])))
     markup.add(InlineKeyboardButton(text=f'🧾 Искать рецепт', switch_inline_query_current_chat=''))
-    markup.add(InlineKeyboardButton(text=f'👩‍👦‍👦 Наши группы 🆕', callback_data=show_menu.new(menu_name=call_filters['our_groups'])))
+    markup.add(InlineKeyboardButton(text=f'👩‍👦‍👦 Наши группы 🆕', callback_data=show_menu.new(menu_name=call_filters['groups'])))
     markup.add(InlineKeyboardButton(text=f'🎄 КОНКУРС НА 50$ 🌟', callback_data=show_menu.new(menu_name=call_filters['contest'])))
 
      
@@ -924,7 +924,7 @@ async def you_very_active(bot: Bot, message: types.Message, count_activity: int)
 
 
 
-async def our_groups(message: types.Message, is_callback=False):
+async def groups(message: types.Message, is_callback=False):
     user_id = message.from_user.id
 
     markup = InlineKeyboardMarkup(row_width=3)
@@ -941,7 +941,7 @@ async def our_groups(message: types.Message, is_callback=False):
         await message.delete()
     else:
         answer = await bot.send_photo(photo='https://obertivanie.com/bot_images/default/sub_to_group.png', protect_content=True, chat_id = user_id, reply_markup=markup, parse_mode='html')
-        user_activity_record(user_id, None, call_filters['our_groups'])
+        user_activity_record(user_id, None, call_filters['groups'])
     await update_last_message(message, castom_message_id = answer.message_id)
 
 

@@ -43,7 +43,7 @@ call_filters = {
     'categories': 'categories',
     'contest': 'contest',
     'nothing': 'nothing',
-    'our_groups': 'our_groups',
+    'groups': 'groups',
 }
 
 
