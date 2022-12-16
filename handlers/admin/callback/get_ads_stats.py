@@ -38,12 +38,12 @@ async def get_ads_stats(call: types.CallbackQuery, callback_data: dict()):
         ORDER BY count DESC;''')
     
     data_ads_by_user_id[0]['name'] = 'contest'
-    data_ads.append(data_ads_by_user_id[0])
+    for num, i in enumerate(data_ads):
+        if data_ads_by_user_id[0]['count'] > i['count']:
+            data_ads.insert(num, data_ads_by_user_id[0])
+            break
 
-    for num, f in enumerate(data_ads):
-        for num2, s in enumerate(data_ads):
-            if f['count'] > s['count']:
-                data_ads[num], data_ads[num2] = data_ads[num2], data_ads[num]
+
 
     all_user_count = sum([d['count'] for d in data_ads])
     t_sum = sum([d['today'] for d in data_ads])
@@ -51,7 +51,7 @@ async def get_ads_stats(call: types.CallbackQuery, callback_data: dict()):
    
     markup = InlineKeyboardMarkup(row_width=4)
     markup.add(*[
-        get_home_button(f'FROM: {len(data_ads) + 1}'), 
+        get_home_button(f'FROM: {len(data_ads)}'), 
         get_home_button(f'ALL: {all_user_count}'), 
         get_home_button(f'TDAY: {t_sum}'), 
         get_home_button(f'LDAY: {l_sum}')])
