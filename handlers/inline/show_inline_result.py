@@ -80,8 +80,8 @@ async def main(query: types.InlineQuery):
     get_fav: bool = filters['favorites'] in query.query.lower()
     answer_data = {
         'results':answer[:50],
-        # 'cache_time': 1 if get_fav or data['is_personal_chat'] or filters['mailing'] in query.query else 60*10,
-        'cache_time': 1,
+        'cache_time': 1 if get_fav or data['is_personal_chat'] or filters['mailing'] in query.query else 60*10,
+        # 'cache_time': 1,
         'is_personal': get_fav,
         'next_offset': next_offset,
     }
