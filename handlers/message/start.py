@@ -112,5 +112,5 @@ async def main_def(message: types.Message):
 
     answer = await message.answer(**data_answer)
     await update_last_message(message, castom_message_id = answer.message_id)
-    user_activity_record(user.id, None, message.text)
+    user_activity_record(user.id, 0, message.text)
     await message.delete()
