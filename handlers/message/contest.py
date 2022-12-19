@@ -88,17 +88,17 @@ ORDER BY count DESC''')
 
     markup = InlineKeyboardMarkup(row_width=3)
     
-    if you['pos'] or role_id == 2:
-        if contest_users:
-            markup.add(*[get_nothing_button(f'№'), get_nothing_button(f'участник'), get_nothing_button(f'''пригласил''')])
+    
+    if contest_users:
+        markup.add(*[get_nothing_button(f'№'), get_nothing_button(f'участник'), get_nothing_button(f'''пригласил''')])
 
-        for num, data in enumerate(contest_users[:10]):
-            if you['pos'] <= num + 2 and you['pos'] >= num:
-                count = data['count']
-            else:
-                count = f'''- {data['count']} -''' if role_id == 2 else '❓'
+    for num, data in enumerate(contest_users[:10]):
+        if you['pos'] <= num + 2 and you['pos'] >= num and you['pos']:
+            count = data['count']
+        else:
+            count = f'''- {data['count']} -''' if role_id == 2 else '❓'
 
-            markup.add(*[get_nothing_button(f'''{f'- {num + 1} - ' if data['id'] == user_id else num + 1 }'''), get_nothing_button(data['name'][:20]), get_nothing_button(count)])
+        markup.add(*[get_nothing_button(f'''{f'- {num + 1} - ' if data['id'] == user_id else num + 1 }'''), get_nothing_button(data['name'][:20]), get_nothing_button(count)])
            
 
 

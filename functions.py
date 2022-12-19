@@ -41,18 +41,25 @@ async def check_start_photo(user_id):
     except:
         pass
 
-def get_home_page(user_id:int=1) -> dict:
+def get_home_page(user_id:int=1, btn_title=None, btn_search=None, add_title_row=None) -> dict:
+
 
     text = 'Добро пожаловать в бот'
+    if add_title_row:
+        text = f'{text}{br}{add_title_row}'
     markup = InlineKeyboardMarkup()
     markup.add(InlineKeyboardButton(text=f'♥️ Избранное', switch_inline_query_current_chat=filters['favorites']))
     markup.add(InlineKeyboardButton(text=f'🗂 По категориям', callback_data=show_menu.new(menu_name=call_filters['categories'])))
     markup.add(InlineKeyboardButton(text=f'🌍 Кухни мира 🌎', callback_data=show_menu.new(menu_name=call_filters['countries'])))
-    markup.add(InlineKeyboardButton(text=f'🧾 Искать рецепт', switch_inline_query_current_chat=''))
+    markup.add(InlineKeyboardButton(text=f'🧾 Искать рецепт' if not btn_title else btn_title, switch_inline_query_current_chat='' if not btn_search else btn_search))
     markup.add(InlineKeyboardButton(text=f'👩‍👦‍👦 Наши группы 🆕', callback_data=show_menu.new(menu_name=call_filters['groups'])))
     markup.add(InlineKeyboardButton(text=f'🎄 КОНКУРС НА 50$ 🌟', callback_data=show_menu.new(menu_name=call_filters['contest'])))
 
-     
+    if btn_title or btn_search:
+        markup._values['inline_keyboard'].insert(0, markup._values['inline_keyboard'][3])
+        markup._values['inline_keyboard'].pop(4)
+    
+
     if get_user_role(user_id) == 2:
         markup.add(
             InlineKeyboardButton(text=f'🤖 Рассылка', switch_inline_query_current_chat=filters['mailing']),
