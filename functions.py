@@ -62,7 +62,7 @@ def get_home_page(user_id:int=1, btn_title=None, btn_search=None, add_title_row=
 
     if get_user_role(user_id) == 2:
         markup.add(
-            InlineKeyboardButton(text=f'🤖 Рассылка', switch_inline_query_current_chat=filters['mailing']),
+            # InlineKeyboardButton(text=f'🤖 Рассылка', switch_inline_query_current_chat=filters['mailing']),
             InlineKeyboardButton(text=f'🤖 Реклама', callback_data=get_ads_stats_call_menu.new()),
         )
 
@@ -274,11 +274,11 @@ class Article:
 
 
             # admin mailing
-            if get_user_role(self.user_id) == 2:
-                try:
-                    markup.add(*self.get_mailing_buttons())
-                except:
-                    pass
+            # if get_user_role(self.user_id) == 2:
+            #     try:
+            #         markup.add(*self.get_mailing_buttons())
+            #     except:
+            #         pass
 
 
         else:
