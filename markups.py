@@ -75,3 +75,11 @@ def get_back_to_inline(button_text: str = f'↪️ Назад', query_text: str 
 # admin
 
 get_ads_stats_call_menu = CallbackData('get_ads')
+
+mails_call_filter = {
+    'edit_text': 'edit_text',
+    'edit_ph': 'edit_ph',
+    'send_all': 'send_all',
+}
+
+mails_call_menu = CallbackData('mails', 'action')

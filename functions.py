@@ -926,6 +926,105 @@ async def you_very_active(bot: Bot, message: types.Message, count_activity: int)
         )
     await bot.send_message(chat_id=ADMIN_ID, text=f'Слишком активный пользователь {user.id} [{count_activity}]')
 
+async def contest(message: types.Message, is_callback=False):
+        user_id = message.from_user.id
+        role_id = get_user_role(user_id)
+        
+
+        contest_users = sql(f'''
+SELECT u2.user_id as id, u2.first_name as name, COUNT(*) as count 
+FROM users as u 
+INNER JOIN users as u2 ON u.came_from = u2.user_id 
+WHERE NOT (u.came_from REGEXP '[^0-9]') 
+GROUP BY u.came_from 
+ORDER BY count DESC''')
+
+        you = {
+            'pos': 0,
+            'count': 0,
+        }
+        for num, data in enumerate(contest_users):
+            if data['id'] == user_id:
+                you.update({
+                    'pos': num +1,
+                    'count': data['count'],
+                })
+
+        fake = [
+            {'id': 4762550621, 'name': 'Alexander', 'count': 1},
+            {'id': 4762550622, 'name': 'Марина', 'count': 1},
+            {'id': 4762550623, 'name': 'Ксения', 'count': 1},
+            {'id': 4762550624, 'name': 'Ирина', 'count': 1},
+            {'id': 4762550625, 'name': 'Oksi', 'count': 1},
+        ]
+        for i in fake:
+            if role_id == 2:
+                i['name'] = '🔻' + i['name']
+
+            contest_users.append(i)
+        
+
+        msg = f'''
+{hlink('Участвуйте в нашем конкурсе на призовой фонд 50 долларов! 💵', BOT_URL + '?start=contest')}
+
+Пригласите как можно больше людей в наш бот по своей реферальной ссылке и станьте победителем 💵🍾
+Конкурс проходит до Нового Года🎄
+
+⛔️Обратите внимание, что участники, которые уже участвуют в конкурсе, или подписались по другой ссылке, не могут принять участие по вашей ссылке. Также не будут засчитываться участники, которые подписались и сразу отписались. В зачет пойдут только пользователи, подписанные на наш кулинарный бот к моменту завершения конкурса.
+
+Призовой фонд разделится следующим образом:
+1️⃣ место - 25 долларов
+2️⃣ место - 15 долларов
+3️⃣ место - 10 долларов
+
+Результаты будут объявлены 31.12.2022
+Способ выплаты призовых будет согласован с победителями в индивидуальном порядке для их удобства.
+Удачи!
+
+{f"📶 Ты пригласил {you['count']} человек.{br}Статистика конкурса открывается только для участников в этом же меню" if not you['pos'] else f"📶 Ты занимаешь {you['pos']} место{br}пригласил {you['count']} человек"},
+    
+📌 Твоя реферальная ссылка:
+{BOT_URL}?start={user_id}
+
+Быстрое приглашение друзьям:
+(нажми на него что б скопировать)
+{hcode(f'Мне нравится этот телеграмм бот с рецептами.{br}Советую тебе подписаться на них по моей ссылке,{br}ведь они сейчас проводят конкурс!💵{br}{BOT_URL}?start={user_id}')}
+
+
+📶 ТОП 10 пригласивших:
+{f'(таблица видна только участникам конкурса, т.е. успешно пригласившим хотя бы одного пользователя)' if not you['count'] else ''}
+
+
+'''
+
+        markup = InlineKeyboardMarkup(row_width=3)
+        
+        
+        if contest_users:
+            markup.add(*[get_nothing_button(f'№'), get_nothing_button(f'участник'), get_nothing_button(f'''пригласил''')])
+
+        for num, data in enumerate(contest_users[:10]):
+            if you['pos'] <= num + 2 and you['pos'] >= num and you['pos']:
+                count = data['count']
+            else:
+                count = f'''- {data['count']} -''' if role_id == 2 else '❓'
+
+            markup.add(*[get_nothing_button(f'''{f'- {num + 1} - ' if data['id'] == user_id else num + 1 }'''), get_nothing_button(data['name'][:20]), get_nothing_button(count)])
+            
+
+
+        markup.add(get_home_button('🎄 На главную 🌟'))
+
+
+        if not is_callback:
+            answer = await message.answer(msg, reply_markup=markup, disable_web_page_preview=True, parse_mode='html')
+            user_activity_record(user_id, None, message.text)
+            await message.delete()
+        else:
+            answer = await bot.send_message(chat_id = user_id, text=msg, reply_markup=markup, disable_web_page_preview=True, parse_mode='html')
+            user_activity_record(user_id, None, call_filters['contest'])
+        await update_last_message(message, castom_message_id = answer.message_id)
+    
 
 
 
@@ -950,6 +1049,264 @@ async def groups(message: types.Message, is_callback=False):
         answer = await bot.send_photo(photo='https://obertivanie.com/bot_images/default/sub_to_group.png', protect_content=True, chat_id = user_id, reply_markup=markup, parse_mode='html')
         user_activity_record(user_id, None, call_filters['groups'])
     await update_last_message(message, castom_message_id = answer.message_id)
+
+
+async def start(message: types.Message):
+        is_reg = register_user(message)
+
+        user = message.from_user
+        
+
+        btn_title = None
+        btn_search = None
+        add_title_row = None
+
+        data_answer = {
+            'text': '',
+        }
+        
+
+        try:
+            is_return = False
+            start_parameters = message.text.split()[1].split('__')
+
+            for start_parameter in start_parameters:
+                if start_parameter == 'speed':
+                    data_answer.update({'text':f'''{data_answer['text']}{br*2}❗️ Быстрый поиск работает только в этом чате (с ботом)'''})
+                
+                elif 'from=' in start_parameter or start_parameter.isdigit():
+
+                    try:
+                        came_from = start_parameter.split('=')[1]
+                    except IndexError:
+                        came_from = start_parameter
+
+                    last_from = sql(f'''SELECT came_from FROM `users` WHERE user_id = {user.id}''')[0]
+
+                    if last_from['came_from'] == came_from:
+                        data_answer.update({'text':f'''{data_answer['text']}{br*2}❗️ Вы уже были приглашены этим пользователем'''})
+                        continue
+
+                    elif last_from['came_from'] and last_from['came_from'].isdigit() and came_from.isdigit():
+                        data_answer.update({'text':f'''{data_answer['text']}{br*2}❗️ Вы уже были приглашены другим пользователем'''})
+                        continue
+
+                    elif came_from == str(user.id):
+                        data_answer.update({'text':f'''{data_answer['text']}{br*2}❗️ Вы не можете пригласить сами себя'''})
+                        continue
+
+                    try:
+                        if not last_from['came_from'] or not last_from['came_from'].isdigit():
+                            sql_query = f'''UPDATE `users` SET `came_from`='{came_from}' WHERE `user_id` = {user.id}'''
+                            sql(sql_query, commit=True)
+                            continue
+                    except Exception as e:
+                        pass
+
+                elif start_parameter == call_filters['contest']:
+                    await contest(message)
+                    await update_last_message(message, castom_message_id = message.message_id + 1)
+                    user_activity_record(user.id, None, message.text)
+
+                    is_return = True
+
+                elif 'gcategory=' in start_parameter:
+                    cat = start_parameter.split('=')[1]
+                    categories = {
+                        'zavtrak':['🍳 ЗАВТРАК', 'Категория=завтраки', 'свой '],
+                        'pervie':['🍲 ПЕРВЫЕ БЛЮДА', 'Категория=супы', 'вкуснейшие '],
+                        'osnovnie':['🍖 ОСНОВНЫЕ БЛЮДА', 'Категория=основные', ''],
+                        'obed':['🍽 НА ОБЕД', 'Категория=основные', 'что покушать '],
+                        'desert':['🥞 ДЕСЕРТЫ', 'Категория=выпечка', 'невероятные '],
+                    }
+                    if cat in categories.keys():
+                        btn_title = categories[cat][0] + ' 👩‍🍳'
+                        btn_search = categories[cat][1]
+                        add_title_row = f'Смотри {categories[cat][2]} {categories[cat][0]} по кнопке ниже'
+                    
+
+        
+        except IndexError:
+            start_parameter = None
+
+        if is_return:
+            return
+
+        data = get_home_page(user.id, btn_title=btn_title, btn_search=btn_search, add_title_row=add_title_row)
+        data_answer = {
+            'text': f'''{data['text']} {data_answer['text']}''',
+            'reply_markup': data['markup'],
+        }
+        
+
+        try:
+            is_start_photo = bool(sql(f'''SELECT COUNT(*) as count FROM `start_messages` WHERE user_id = {user.id}''')[0]['count'])
+            if is_reg or not is_start_photo:
+                    photo = await message.answer_photo(photo='https://obertivanie.com/bot_images/default/sub_to_group.png', protect_content=True,
+                    reply_markup=InlineKeyboardMarkup().add(InlineKeyboardButton(text=f'👩‍👦‍👦⠀В группу⠀👨‍👩‍👧', url='https://t.me/+aIOTdrZd3504NGUy')))
+                    time.sleep(0.2)
+                    await bot.pin_chat_message(chat_id=user.id, message_id=photo.message_id)
+                    sql(f'''INSERT INTO `start_messages`(`user_id`, `message_id`) VALUES ({user.id},{photo.message_id})''')
+        except:
+            pass
+
+        answer = await message.answer(**data_answer)
+        await update_last_message(message, castom_message_id = answer.message_id)
+        user_activity_record(user.id, 0, message.text)
+        await message.delete()
+
+
+
+
+async def send_categories(bot, call, message_data):
+    try:
+        await call.message.edit_text(**message_data,)
+    except:
+        try:
+            await bot.edit_message_text(
+                inline_message_id=call.inline_message_id,
+                **message_data,
+            )
+        except:
+            try:
+                await bot.edit_message_text(
+                    chat_id=call.from_user.id,
+                    message_id=call.message_id,
+                    **message_data,
+                )
+            except:
+                answer = await bot.send_message(
+                    chat_id=call.from_user.id,
+                    **message_data,
+                )
+                await update_last_message(call, castom_message_id=answer.message_id)
+                await call.delete()
+                return
+    await call.answer()
+
+def buttons_list_categories(categories, highlight_symbol):
+    keyboard_markup = InlineKeyboardMarkup()
+    for category in categories[:99]:
+
+        title = category['title'].replace(highlight_symbol, '').strip().split(' ')[0][:12].lower()
+
+        keyboard_data = {
+            'text': category['title'],
+            'switch_inline_query_current_chat': f'''{filters['category']}{title}''',
+        }
+
+        keyboard_markup.add(InlineKeyboardButton(**keyboard_data,))
+    return keyboard_markup
+
+async def by_countries(bot, call, highlight_symbol = '⭐️ '):
+
+    text = 'Кухни разных стран'
+    top_categories = sql(
+        f'SELECT title, emoji FROM `categories` WHERE favorite = 1')
+    categories = sql(
+        'SELECT title, emoji FROM categories WHERE parent_id = 1 AND is_show = 1')
+
+
+    new_category_list = []
+    
+    max_len = max([len(category['title'].split()[0]) if not category['title'].split()[0] in ['Средиземноморская','Азербайджанская'] else 0  for category in categories])
+    for category in categories:
+        title = category['title'].split()[0]
+
+        spase = '⠀'* (max_len - len(title))
+        category['title'] = f'''{title} {spase}{category['emoji']}'''
+        new_category_list.append(category)
+
+    for category in top_categories:
+        title = category['title'].split()[0]
+
+        spase = '⠀'* (max_len - len(title))
+        category['title'] = f'''{highlight_symbol} {title} {spase[:-1]}{category["emoji"]}'''
+        new_category_list.append(category)
+
+    categories = new_category_list
+
+    answer = {
+        'parse_mode': 'html',
+        'reply_markup': buttons_list_categories(categories, highlight_symbol).add(get_home_button()),
+        'text': text,  
+    }
+    await send_categories(bot, call, answer)
+    
+async def by_categories(bot, call, highlight_symbol = '⭐️ '):
+    text = 'По категориям'
+    categories = sql('SELECT title,emoji FROM categories WHERE parent_id = 2 AND is_show = 1')
+    answer = {
+        'parse_mode': 'html',
+        'reply_markup': buttons_list_categories(categories, highlight_symbol).add(get_home_button()),
+        'text': text,  
+    }
+    await send_categories(bot, call, answer)
+
+async def get_home(call):
+    data = get_home_page(call.from_user.id)
+
+    message_data = {
+        'text': data['text'],
+        'reply_markup': data['markup'],
+        'parse_mode': 'html',
+    }
+
+    try:
+        await call.message.edit_text(**message_data)
+    
+    except Exception as ex:
+        try:
+            await bot.edit_message_text(
+                inline_message_id=call.inline_message_id,
+                **message_data,
+            )
+        except:
+            answer = await bot.send_message(chat_id=call.from_user.id, **message_data,)
+            await update_last_message(call, castom_message_id=answer.message_id)
+
+    finally:
+        await call.answer()
+        return
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

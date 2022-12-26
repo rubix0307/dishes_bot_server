@@ -1,19 +1,17 @@
 import asyncio
 import time
+
+import aioschedule
 from aiogram import Bot
-from config import BOT_TOKEN
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import Dispatcher
 from aiogram.utils.exceptions import NetworkError
-import aioschedule
 
+from config import BOT_TOKEN
 
-
-
-
-
-
+storage = MemoryStorage()
 bot = Bot(token=BOT_TOKEN)
-dp = Dispatcher(bot)
+dp = Dispatcher(bot, storage=storage)
 
 
 
@@ -21,6 +19,7 @@ dp = Dispatcher(bot)
 
 if __name__ == '__main__':
     from aiogram import executor
+
     from handlers import dp
     from mailing.functions import mailing_dishe
 
