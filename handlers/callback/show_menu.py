@@ -5,7 +5,7 @@ from functions import by_categories, by_countries, contest, get_home, groups
 from markups import call_filters, show_menu
 
 
-@dp.callback_query_handler(show_menu.filter())
+@dp.callback_query_handler(show_menu.filter(), state='*')
 async def show_dish(call: types.CallbackQuery, callback_data: dict()):
 
     try:

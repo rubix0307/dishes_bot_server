@@ -80,6 +80,11 @@ mails_call_filter = {
     'edit_text': 'edit_text',
     'edit_ph': 'edit_ph',
     'send_all': 'send_all',
+    'preview_state': 'preview_state',
+    'paddings_state': 'paddings_state',
+    'self_send': 'self_send',
+    'send_all': 'send_all',
+    'settings': 'settings',
 }
 
 mails_call_menu = CallbackData('mails', 'action')

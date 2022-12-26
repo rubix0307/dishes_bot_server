@@ -5,7 +5,7 @@ from functions import Article, edit_preview, get_call_data, get_data_dish
 from markups import edit_fav_by_id_call_menu
 
 
-@dp.callback_query_handler(edit_fav_by_id_call_menu.filter())
+@dp.callback_query_handler(edit_fav_by_id_call_menu.filter(), state='*')
 async def show_dish(call: types.CallbackQuery, callback_data: dict()):
 
     user = call.from_user

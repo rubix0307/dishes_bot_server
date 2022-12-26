@@ -15,7 +15,7 @@ from functions import (Article, get_data_dish, get_date, get_fav_ids,
 from markups import get_home_button
 
 br = '\n'
-@dp.message_handler(filters.Text(contains=['get_id']))
+@dp.message_handler(filters.Text(contains=['get_id']), state='*')
 async def show_dish(message: types.Message):
 
     

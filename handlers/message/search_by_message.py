@@ -12,7 +12,7 @@ from functions import (Article, get_data_dish, get_date,
 
 br = '\n'
 
-@dp.message_handler()
+@dp.message_handler(state='*')
 async def main_def(message: types.Message):
     markup = InlineKeyboardMarkup()
     text = message.html_text
