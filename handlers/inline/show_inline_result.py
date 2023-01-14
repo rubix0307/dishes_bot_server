@@ -7,13 +7,14 @@ import requests
 from app import dp
 from config import MEDIA_URL
 from functions import (get_blank_data, get_data_by_category, get_data_by_favorites, get_data_by_mailing, get_data_by_query_text,
-                       get_inline_result, get_normal_form,
+                       get_inline_result, get_normal_form, user_activity_record,
                        сleaning_input_text_for_search, сleaning_input_text_from_sql_injection)
 from markups import br, filters
 
 @dp.inline_handler()
 async def main(query: types.InlineQuery):
     start_time = time.time()
+    user = query.from_user
 
     query.query = сleaning_input_text_from_sql_injection(query.query)
 
@@ -45,6 +46,8 @@ async def main(query: types.InlineQuery):
 
     else:
         data_list = get_data_by_query_text(**data)
+
+    user_activity_record(user.id, '0', f'''search {data['search_text']}''')
 
 
     if not data_list:

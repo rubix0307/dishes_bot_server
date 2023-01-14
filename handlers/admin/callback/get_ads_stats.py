@@ -3,72 +3,92 @@ from aiogram.types.inline_keyboard import InlineKeyboardMarkup
 from app import bot, dp
 from db.functions import sql
 from functions import get_call_data
+from handlers.admin.functions import format_string
 from markups import get_ads_stats_call_menu, get_home_button
 
 import datetime
 br = '\n'
 
+
 @dp.callback_query_handler(get_ads_stats_call_menu.filter())
 async def get_ads_stats(call: types.CallbackQuery, callback_data: dict()):
 
+    days = []
     date = datetime.datetime.now()
-    date_today = f'{date.year}-{date.month}-{date.day}'
+    for i in range(3):
+        l_day = date - datetime.timedelta(days=i)
+        days.append(f'{l_day.year}-{l_day.month}-{l_day.day}')
 
-    l_day = date - datetime.timedelta(days=1)
-    date_last_day = f'{l_day.year}-{l_day.month}-{l_day.day}'
+    data_ads = []
+    for i in range(2):
+        rules = [
+            "u.came_from = name" if i else "NOT (u.came_from REGEXP '[^0-9]')",
+            '' if i else "NOT",
+            "GROUP BY u1.came_from" if i else "",
+        ]
 
-    data_ads = sql(f'''
-        SELECT u1.came_from as name, COUNT(*) as count,
-        (SELECT COUNT(*) as today FROM users as u2 WHERE u2.came_from = name AND date = '{date_today}') as today,
-        (SELECT COUNT(*) as today FROM users as u2 WHERE u2.came_from = name AND date = '{date_last_day}') as lastday
+        answer = sql(f'''
+            SELECT u1.came_from as name, COUNT(*) as count,
+            (SELECT COUNT(*) FROM users as u WHERE u.came_from = name AND u.is_active = 0) as noactive,
+            (SELECT COUNT(*) FROM users as u WHERE {rules[0]} AND date = '{days[0]}') as today,
+            (SELECT COUNT(*) FROM users as u WHERE {rules[0]} AND date = '{days[0]}' AND u.is_active = 0) as today_noactive,
+            (SELECT COUNT(*) FROM users as u WHERE {rules[0]} AND date = '{days[1]}') as lastday,
+            (SELECT COUNT(*) FROM users as u WHERE {rules[0]} AND date = '{days[1]}' AND u.is_active = 0) as lastday_noactive,
+            (SELECT COUNT(*) FROM users as u WHERE {rules[0]} AND date = '{days[2]}') as day_before_yesterday,
+            (SELECT COUNT(*) FROM users as u WHERE {rules[0]} AND date = '{days[2]}' AND u.is_active = 0) as day_before_yesterday_noactive
+            
+            FROM users as u1
+            WHERE {rules[1]} (u1.came_from REGEXP '[^0-9]')
+            {rules[2]}
+            ORDER BY count DESC;
+        ''')
 
-                
-        FROM users as u1
-        WHERE (u1.came_from REGEXP '[^0-9]')
-        GROUP BY u1.came_from
-        ORDER BY count DESC;
-            ''')
+        if not i:
+            answer[0]['name'] = 'contest'
+        data_ads.append(answer)
 
-    data_ads_by_user_id = sql(f'''
-        SELECT u1.came_from as name, COUNT(*) as count,
-        (SELECT COUNT(*) as count FROM users as u2 WHERE NOT (u2.came_from REGEXP '[^0-9]') AND date = '{date_today}') as today,
-        (SELECT COUNT(*) as count FROM users as u2 WHERE NOT (u2.came_from REGEXP '[^0-9]') AND date = '{date_last_day}') as lastday        
-        FROM users as u1
-        WHERE NOT (u1.came_from REGEXP '[^0-9]')
-        ORDER BY count DESC;''')
-    
-    data_ads_by_user_id[0]['name'] = 'contest'
-    for num, i in enumerate(data_ads):
-        if data_ads_by_user_id[0]['count'] > i['count']:
-            data_ads.insert(num, data_ads_by_user_id[0])
-            break
+    ads = data_ads[0] + data_ads[1]
+    ads = sorted(ads, key=lambda x: x['count'], reverse=True)
 
 
+    count_campaigns = len(ads)
+    count_all = sum([i['count'] for i in ads])
+    count_all_noactive = sum([i['noactive'] for i in ads])
 
-    all_user_count = sum([d['count'] for d in data_ads])
-    t_sum = sum([d['today'] for d in data_ads])
-    l_sum = sum([d['lastday'] for d in data_ads])
-   
-    markup = InlineKeyboardMarkup(row_width=4)
+    count_today = sum([i['today'] for i in ads])
+    count_today_noactive = sum([i['today_noactive'] for i in ads])
+
+    count_lastday = sum([i['lastday'] for i in ads])
+    count_lastday_noactive = sum([i['lastday_noactive'] for i in ads])
+
+    count_day_before_yesterday = sum([i['day_before_yesterday'] for i in ads])
+    count_day_before_yesterday_noactive = sum([i['day_before_yesterday_noactive'] for i in ads])
+
+    markup = InlineKeyboardMarkup(row_width=5)
     markup.add(*[
-        get_home_button(f'FROM: {len(data_ads)}'), 
-        get_home_button(f'ALL: {all_user_count}'), 
-        get_home_button(f'TDAY: {t_sum}'), 
-        get_home_button(f'LDAY: {l_sum}')])
+        get_home_button(f'name: {count_campaigns}'),
+        get_home_button(f'{count_all-count_all_noactive} (-{count_all_noactive})'),
+        get_home_button(f'T: {count_today-count_today_noactive} (-{count_today_noactive})'),
+        get_home_button(f'L: {count_lastday-count_lastday_noactive} (-{count_lastday_noactive})'),
+        get_home_button(f'BY: {count_day_before_yesterday-count_day_before_yesterday_noactive} (-{count_day_before_yesterday_noactive})'),
+        ])
 
-    for ad in data_ads[:50]:
+    
+    for ad in ads:
+        
         name = ad['name']
-        count = ad['count']
-        today = f'''+{ad['today']}''' if ad['today'] else 'ㅤ'
-        lastday = f'''+{ad['lastday']}''' if ad['lastday'] else 'ㅤ'
-
+        count = format_string(ad['count'], ad['noactive'])
+        td = format_string(ad['today'], ad['today_noactive'])
+        ld = format_string(ad['lastday'], ad['lastday_noactive'])
+        dby = format_string(ad['day_before_yesterday'], ad['day_before_yesterday_noactive'])
+        
         data = [
             get_home_button(name),
             get_home_button(count),
-            get_home_button(today),
-            get_home_button(lastday),
-            ]
-
+            get_home_button(td),
+            get_home_button(ld),
+            get_home_button(dby),
+        ]
         markup.add(*data)
     
 

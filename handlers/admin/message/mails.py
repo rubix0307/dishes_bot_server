@@ -32,10 +32,19 @@ async def mailing_start_handler(message: types.Message, state: FSMContext):
 async def mailing_start_handler(message: types.Message, state: FSMContext):
     await edit_paddings_state(message=message, state=state)
 
+@dp.callback_query_handler(lambda call: mails_call_filter['share_state'] in call.data, state='*')
+async def mailing_start_handler(message: types.Message, state: FSMContext):
+    await edit_share_state(message=message, state=state)
+
+@dp.callback_query_handler(lambda call: mails_call_filter['protect_content_state'] in call.data, state='*')
+async def mailing_start_handler(message: types.Message, state: FSMContext):
+    await edit_protect_content_state(message=message, state=state)
+
 @dp.callback_query_handler(lambda call: mails_call_filter['self_send'] in call.data, state='*')
 async def mailing_start_handler(message: types.Message, state: FSMContext):
     await send_mailing(message, state, only_me=True)
 
+@dp.message_handler(state='*', commands=['send_all'])
 @dp.callback_query_handler(lambda call: mails_call_filter['send_all'] in call.data, state='*')
 async def mailing_start_handler(message: types.Message, state: FSMContext):
     await send_mailing(message, state, only_me=False)

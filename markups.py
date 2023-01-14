@@ -82,6 +82,8 @@ mails_call_filter = {
     'send_all': 'send_all',
     'preview_state': 'preview_state',
     'paddings_state': 'paddings_state',
+    'share_state': 'share_state',
+    'protect_content_state': 'protect_content_state',
     'self_send': 'self_send',
     'send_all': 'send_all',
     'settings': 'settings',

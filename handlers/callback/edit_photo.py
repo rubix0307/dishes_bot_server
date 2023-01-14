@@ -3,7 +3,7 @@ from aiogram import types
 from aiogram.utils.exceptions import MessageNotModified
 
 from app import bot, dp
-from functions import Article, edit_preview, get_call_data, get_data_dish
+from functions import Article, edit_preview, get_call_data, get_data_dish, user_activity_record
 from markups import set_photo_call_menu
 
 
@@ -19,9 +19,9 @@ async def edit_photo(call: types.CallbackQuery, callback_data: dict()):
 
     data = get_data_dish(call_data['id'])
     article = Article(data, callback_data=call_data, user_id=user.id)
-
     article, call_data = edit_preview(article, call_data)
 
+    user_activity_record(user.id, call_data['id'], 'get photo')
 
     message_data = {
         'parse_mode': 'html',

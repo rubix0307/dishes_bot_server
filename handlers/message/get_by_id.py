@@ -65,11 +65,18 @@ async def show_dish(message: types.Message):
 
     try:
         
+        try:
+            await message.delete()
+        except MessageToDeleteNotFound:
+            pass
 
         try:
             answer = await message.answer(reply_markup=article.get_markup(), text=article.get_message_text(), parse_mode='html')
         except ValueError as e:
-            answer = await message.answer(reply_markup=article.get_markup(clear_query=True), text=article.get_message_text(), parse_mode='html')
+            try:
+                answer = await message.answer(reply_markup=article.get_markup(clear_query=True), text=article.get_message_text(), parse_mode='html')
+            except Exception as e:
+                print(e)
 
         finally:
             await update_last_message(message, castom_message_id=answer.message_id)
@@ -78,8 +85,4 @@ async def show_dish(message: types.Message):
         user_activity_record(user.id, dish_id, query)
         
         
-        try:
-            await message.delete()
-        except MessageToDeleteNotFound:
-            pass
     

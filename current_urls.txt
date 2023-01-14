@@ -1,5 +1,4 @@
 
-https://obertivanie.com/bot_images/ads/ukrainian_stikers.jpg
 https://obertivanie.com/bot_images/100/1.jpg
 https://obertivanie.com/bot_images/100/5.jpg
 https://obertivanie.com/bot_images/100/9.jpg
@@ -9,7 +8,6 @@ https://obertivanie.com/bot_images/100/21.jpg
 https://obertivanie.com/bot_images/100/25.jpg
 https://obertivanie.com/bot_images/100/29.jpg
 https://obertivanie.com/bot_images/100/33.jpg
-https://obertivanie.com/bot_images/ads/ukrainian_stikers.jpg
 https://obertivanie.com/bot_images/100/37.jpg
 https://obertivanie.com/bot_images/100/41.jpg
 https://obertivanie.com/bot_images/100/45.jpg
@@ -19,7 +17,6 @@ https://obertivanie.com/bot_images/100/58.jpg
 https://obertivanie.com/bot_images/100/62.jpg
 https://obertivanie.com/bot_images/100/67.jpg
 https://obertivanie.com/bot_images/100/71.jpg
-https://obertivanie.com/bot_images/default/your_ad.png
 https://obertivanie.com/bot_images/100/75.jpg
 https://obertivanie.com/bot_images/100/79.jpg
 https://obertivanie.com/bot_images/100/83.jpg
@@ -29,7 +26,6 @@ https://obertivanie.com/bot_images/100/95.jpg
 https://obertivanie.com/bot_images/100/99.jpg
 https://obertivanie.com/bot_images/100/103.jpg
 https://obertivanie.com/bot_images/100/106.jpg
-https://obertivanie.com/bot_images/default/your_ad.png
 https://obertivanie.com/bot_images/100/110.jpg
 https://obertivanie.com/bot_images/100/114.jpg
 https://obertivanie.com/bot_images/100/118.jpg
@@ -39,7 +35,6 @@ https://obertivanie.com/bot_images/100/130.jpg
 https://obertivanie.com/bot_images/100/134.jpg
 https://obertivanie.com/bot_images/100/138.jpg
 https://obertivanie.com/bot_images/100/142.jpg
-https://obertivanie.com/bot_images/default/your_ad.png
 https://obertivanie.com/bot_images/100/145.jpg
 https://obertivanie.com/bot_images/100/147.jpg
 https://obertivanie.com/bot_images/100/152.jpg

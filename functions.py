@@ -5,8 +5,10 @@ import time
 
 import pymorphy2
 from aiogram import Bot, types
+from aiogram.dispatcher import FSMContext
 from aiogram.types.inline_keyboard import (InlineKeyboardButton,
                                            InlineKeyboardMarkup)
+from aiogram.types.reply_keyboard import KeyboardButton, ReplyKeyboardMarkup
 from aiogram.utils.markdown import *
 
 from app import bot
@@ -49,8 +51,8 @@ def get_home_page(user_id:int=1, btn_title=None, btn_search=None, add_title_row=
         text = f'{text}{br}{add_title_row}'
     markup = InlineKeyboardMarkup()
     markup.add(InlineKeyboardButton(text=f'♥️ Избранное', switch_inline_query_current_chat=filters['favorites']))
-    markup.add(InlineKeyboardButton(text=f'🗂 По категориям', callback_data=show_menu.new(menu_name=call_filters['categories'])))
     markup.add(InlineKeyboardButton(text=f'🌍 Кухни мира 🌎', callback_data=show_menu.new(menu_name=call_filters['countries'])))
+    markup.add(InlineKeyboardButton(text=f'🗂 По категориям', callback_data=show_menu.new(menu_name=call_filters['categories'])))
     markup.add(InlineKeyboardButton(text=f'🧾 Искать рецепт' if not btn_title else btn_title, switch_inline_query_current_chat='' if not btn_search else btn_search))
     markup.add(InlineKeyboardButton(text=f'👩‍👦‍👦 Наши группы 🆕', callback_data=show_menu.new(menu_name=call_filters['groups'])))
     markup.add(InlineKeyboardButton(text=f'🎄 КОНКУРС НА 50$ 🌟', callback_data=show_menu.new(menu_name=call_filters['contest'])))
@@ -71,6 +73,7 @@ def get_home_page(user_id:int=1, btn_title=None, btn_search=None, add_title_row=
     return {
         'text': text,
         'markup': markup,
+        'parse_mode': 'html',
     }
 
 def сleaning_input_text_from_sql_injection(text: str):
@@ -164,7 +167,7 @@ class Article:
         self.protein = data['protein']
         self.fats = data['fats']
         self.carbohydrates = data['carbohydrates']
-        self.recipe = data['recipe'].replace(br, br*2) if data['recipe'] else ''
+        self.recipe = data['recipe'] if data['recipe'] else ''
 
         self.categories = data['categories'].capitalize() if data['categories'] else ''
         self.ingredients = data['ingredients']
@@ -206,10 +209,8 @@ class Article:
                 hide_link(self.preview) if show_preview else '',
                 hlink(self.title.upper(), f'{BOT_URL}?start=get_id={self.id}'),
                 self.get_description(),
-                hcode(f'*калорийность для сырых продуктов'),
-                br,
-                self.ingredients,
-                br,
+                hcode(f'*калорийность для сырых продуктов') + br,
+                self.ingredients + br,
                 f'🧾 Как готовить:{br}{self.recipe}' if not self.is_mailing else f'',
                 br,
                 hlink(f'📖 КНИГА РЕЦЕПТОВ - лучший кулинарный бот', f'{BOT_URL}?start=get_id={self.id}'),
@@ -447,7 +448,7 @@ def get_inline_result(query, data_list, offset, is_personal_chat: bool = False, 
                 continue
 
     # ad block
-    insert_ad(offset, answer, query.query)
+    # insert_ad(offset, answer, query.query)
     
     
     return answer
@@ -883,7 +884,12 @@ def get_mailing_data(castom_dish_id: int = None):
 
 
 
-
+def get_activity(user):
+    today_activity = sql(f'''
+        SELECT COUNT(*) as `count` FROM `users_actions` 
+        WHERE user_id = {user.id} AND time_at = "{get_date()}";''')
+    count_activity = today_activity[0]['count']
+    return count_activity
 
 def user_activity_record(user_id: int, dish_id: int, query_text: str):
     sql_query = f'''
@@ -935,9 +941,9 @@ async def contest(message: types.Message, is_callback=False):
 SELECT u2.user_id as id, u2.first_name as name, COUNT(*) as count 
 FROM users as u 
 INNER JOIN users as u2 ON u.came_from = u2.user_id 
-WHERE NOT (u.came_from REGEXP '[^0-9]') 
-GROUP BY u.came_from 
-ORDER BY count DESC''')
+WHERE NOT (u.came_from REGEXP '[^0-9]') AND u.date <= '2022-12-30'
+GROUP BY u.came_from  
+ORDER BY `count`  DESC''')
 
         you = {
             'pos': 0,
@@ -951,9 +957,9 @@ ORDER BY count DESC''')
                 })
 
         fake = [
-            {'id': 4762550621, 'name': 'Alexander', 'count': 1},
-            {'id': 4762550622, 'name': 'Марина', 'count': 1},
-            {'id': 4762550623, 'name': 'Ксения', 'count': 1},
+            {'id': 4762550621, 'name': 'Alexander', 'count': 2},
+            {'id': 4762550622, 'name': 'Марина', 'count': 2},
+            {'id': 4762550623, 'name': 'Ксения', 'count': 2},
             {'id': 4762550624, 'name': 'Ирина', 'count': 1},
             {'id': 4762550625, 'name': 'Oksi', 'count': 1},
         ]
@@ -964,8 +970,8 @@ ORDER BY count DESC''')
             contest_users.append(i)
         
 
-        msg = f'''
-{hlink('Участвуйте в нашем конкурсе на призовой фонд 50 долларов! 💵', BOT_URL + '?start=contest')}
+        msg = f'''{hbold('СКОРО НОВЫЙ КОНКУРС')}
+А ПОКА, КОНКУРС ЗАВЕРШЕН - {hlink('РЕЗУЛЬТАТЫ','https://t.me/best_recipe_group/622')}
 
 Пригласите как можно больше людей в наш бот по своей реферальной ссылке и станьте победителем 💵🍾
 Конкурс проходит до Нового Года🎄
@@ -1004,10 +1010,14 @@ ORDER BY count DESC''')
             markup.add(*[get_nothing_button(f'№'), get_nothing_button(f'участник'), get_nothing_button(f'''пригласил''')])
 
         for num, data in enumerate(contest_users[:10]):
-            if you['pos'] <= num + 2 and you['pos'] >= num and you['pos']:
-                count = data['count']
-            else:
-                count = f'''- {data['count']} -''' if role_id == 2 else '❓'
+            # if you['pos'] <= num + 2 and you['pos'] >= num and you['pos']:
+            #     count = data['count']
+            # else:
+            #     count = f'''- {data['count']} -''' if role_id == 2 else '❓'
+
+
+            # finished contest
+            count = data['count']
 
             markup.add(*[get_nothing_button(f'''{f'- {num + 1} - ' if data['id'] == user_id else num + 1 }'''), get_nothing_button(data['name'][:20]), get_nothing_button(count)])
             
@@ -1051,21 +1061,22 @@ async def groups(message: types.Message, is_callback=False):
     await update_last_message(message, castom_message_id = answer.message_id)
 
 
-async def start(message: types.Message):
+async def start(message: types.Message,state=None,):
         is_reg = register_user(message)
 
         user = message.from_user
         
-
         btn_title = None
         btn_search = None
         add_title_row = None
+        show_diche = False
+        query_text = ''
+
 
         data_answer = {
             'text': '',
         }
         
-
         try:
             is_return = False
             start_parameters = message.text.split()[1].split('__')
@@ -1124,7 +1135,12 @@ async def start(message: types.Message):
                         btn_search = categories[cat][1]
                         add_title_row = f'Смотри {categories[cat][2]} {categories[cat][0]} по кнопке ниже'
                     
+                elif 'get_id=' in start_parameter:
+                    dish_id = int(start_parameter.split('=')[1])
+                    show_diche = True
 
+                elif 'query_text=' in start_parameter:
+                    query_text = start_parameter.split('=')[1]
         
         except IndexError:
             start_parameter = None
@@ -1132,10 +1148,16 @@ async def start(message: types.Message):
         if is_return:
             return
 
-        data = get_home_page(user.id, btn_title=btn_title, btn_search=btn_search, add_title_row=add_title_row)
+        if not show_diche:
+            data = get_home_page(user.id, btn_title=btn_title, btn_search=btn_search, add_title_row=add_title_row)
+        else:
+            data = get_data_start_get_id(user.id, dish_id, query_text)
+
+
         data_answer = {
             'text': f'''{data['text']} {data_answer['text']}''',
             'reply_markup': data['markup'],
+            'parse_mode': data['parse_mode'],
         }
         
 
@@ -1144,7 +1166,7 @@ async def start(message: types.Message):
             if is_reg or not is_start_photo:
                     photo = await message.answer_photo(photo='https://obertivanie.com/bot_images/default/sub_to_group.png', protect_content=True,
                     reply_markup=InlineKeyboardMarkup().add(InlineKeyboardButton(text=f'👩‍👦‍👦⠀В группу⠀👨‍👩‍👧', url='https://t.me/+aIOTdrZd3504NGUy')))
-                    time.sleep(0.2)
+                    time.sleep(0.5)
                     await bot.pin_chat_message(chat_id=user.id, message_id=photo.message_id)
                     sql(f'''INSERT INTO `start_messages`(`user_id`, `message_id`) VALUES ({user.id},{photo.message_id})''')
         except:
@@ -1270,6 +1292,29 @@ async def get_home(call):
         return
 
 
+def get_data_start_get_id(user_id, dish_id, query_text):
+    fav_ids = get_fav_ids(user_id)
+    callback_data = {
+        'id': dish_id,
+        'fav': int(dish_id in fav_ids),
+        'query': query_text,
+        'num_ph': 0,
+    }
+
+    data = get_data_dish(dish_id)
+    article = Article(data, callback_data=callback_data, user_id=user_id)
+    try:
+        article.preview = MEDIA_URL + data['local_photo']
+    except:
+        pass
+
+
+    data = {
+        'markup': article.get_markup(),
+        'text': article.get_message_text(),
+        'parse_mode': 'html',
+    }
+    return data
 
 
 
@@ -1281,15 +1326,34 @@ async def get_home(call):
 
 
 
+async def send_categories_markup(message: types.Message, dishe_id, state=FSMContext):
+
+
+
+    markup = ReplyKeyboardMarkup(resize_keyboard=True)
+    dishes_categories = sql(f'''SELECT * FROM `dishes_categories` WHERE dish_id = {dishe_id};''')
+    ids = ','.join([str(i['category_id']) for i in dishes_categories])
+    if not ids:
+        ids = '0'
+
+    categories_active = sql(f'''SELECT * FROM `categories` WHERE id IN ({ids})''')
+    categories = sql(f'''SELECT * FROM `categories` WHERE parent_id AND id NOT IN ({ids})''')
+    
+    for category in categories_active:
+        markup.add(KeyboardButton(f'''- {category['title']} -'''))
+    for category in categories[::-1]:
+        markup.add(KeyboardButton(category['title']))
+
+    answer = await message.answer('Категории', reply_markup=markup)
+    async with state.proxy() as data:
+        data['dishe_id'] = dishe_id
+        data['category_message_id'] = answer.message_id
 
 
 
 
-
-
-
-
-
+def is_edited_mode(user_id, state: FSMContext) -> bool:
+    return state.storage.data[str(user_id)][str(user_id)]['state'] == 'EditCategories:active'
 
 
 

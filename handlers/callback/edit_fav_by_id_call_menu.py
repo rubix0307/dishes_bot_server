@@ -1,7 +1,7 @@
 from aiogram import types
 from app import bot, dp
 from db.functions import sql
-from functions import Article, edit_preview, get_call_data, get_data_dish
+from functions import Article, edit_preview, get_call_data, get_data_dish, user_activity_record
 from markups import edit_fav_by_id_call_menu
 
 
@@ -17,12 +17,14 @@ async def show_dish(call: types.CallbackQuery, callback_data: dict()):
             f'''INSERT INTO fav_dish_user (user_id, dish_id) VALUES ({user.id},{call_data['id']})''',
             commit=True,
         )
+        user_activity_record(user.id, call_data['id'], 'add fav')
     else:
         answer_text = 'Убрано из избранного'
         sql(
             f'''DELETE FROM fav_dish_user WHERE fav_dish_user.user_id = {user.id} AND fav_dish_user.dish_id = {call_data['id']}''',
             commit=True,
         )
+        user_activity_record(user.id, call_data['id'], 'remove fav')
 
     call_data['fav'] = int(not call_data['fav'])
 

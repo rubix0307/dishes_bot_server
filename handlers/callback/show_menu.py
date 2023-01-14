@@ -1,13 +1,13 @@
 from aiogram import types
 
 from app import bot, dp
-from functions import by_categories, by_countries, contest, get_home, groups
+from functions import by_categories, by_countries, contest, get_home, groups, user_activity_record
 from markups import call_filters, show_menu
 
 
 @dp.callback_query_handler(show_menu.filter(), state='*')
 async def show_dish(call: types.CallbackQuery, callback_data: dict()):
-
+    user = call.from_user
     try:
         menu_name = callback_data['menu_name']
 
@@ -30,6 +30,9 @@ async def show_dish(call: types.CallbackQuery, callback_data: dict()):
             await call.answer()
     except:
         await get_home(call)
+
+    finally:
+        user_activity_record(user.id,'0', f'get menu {menu_name}')
 
     
 
