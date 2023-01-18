@@ -3,9 +3,11 @@ from aiogram.types.inline_keyboard import InlineKeyboardMarkup
 from app import bot, dp
 from db.functions import sql
 from functions import get_call_data
-from handlers.admin.functions import format_string
+from handlers.admin.functions import StatsTableHtml, format_string
 from markups import get_ads_stats_call_menu, get_home_button
-
+from aiogram.types.inline_keyboard import (InlineKeyboardButton,
+                                           InlineKeyboardMarkup)
+from aiogram.types.web_app_info import WebAppInfo
 import datetime
 br = '\n'
 
@@ -48,7 +50,7 @@ async def get_ads_stats(call: types.CallbackQuery, callback_data: dict()):
         data_ads.append(answer)
 
     ads = data_ads[0] + data_ads[1]
-    ads = sorted(ads, key=lambda x: x['count'], reverse=True)
+    ads = sorted(ads, key=lambda x: x['count']-x['noactive'], reverse=True)
 
 
     count_campaigns = len(ads)
@@ -64,6 +66,20 @@ async def get_ads_stats(call: types.CallbackQuery, callback_data: dict()):
     count_day_before_yesterday = sum([i['day_before_yesterday'] for i in ads])
     count_day_before_yesterday_noactive = sum([i['day_before_yesterday_noactive'] for i in ads])
 
+
+    table = StatsTableHtml()
+    table.create_header(
+        count_campaigns,
+        count_all-count_all_noactive,
+        count_all_noactive,
+        count_today-count_today_noactive,
+        count_today_noactive,
+        count_lastday-count_lastday_noactive,
+        count_lastday_noactive,
+        count_day_before_yesterday-count_day_before_yesterday_noactive,
+        count_day_before_yesterday_noactive,
+    )
+
     markup = InlineKeyboardMarkup(row_width=5)
     markup.add(*[
         get_home_button(f'name: {count_campaigns}'),
@@ -74,24 +90,27 @@ async def get_ads_stats(call: types.CallbackQuery, callback_data: dict()):
         ])
 
     
-    for ad in ads:
-        
-        name = ad['name']
-        count = format_string(ad['count'], ad['noactive'])
-        td = format_string(ad['today'], ad['today_noactive'])
-        ld = format_string(ad['lastday'], ad['lastday_noactive'])
-        dby = format_string(ad['day_before_yesterday'], ad['day_before_yesterday_noactive'])
-        
-        data = [
-            get_home_button(name),
-            get_home_button(count),
-            get_home_button(td),
-            get_home_button(ld),
-            get_home_button(dby),
-        ]
-        markup.add(*data)
+    for num, ad in enumerate(ads):
+        if num < 18:
+            name = ad['name']
+            count = format_string(ad['count'], ad['noactive'])
+            td = format_string(ad['today'], ad['today_noactive'])
+            ld = format_string(ad['lastday'], ad['lastday_noactive'])
+            dby = format_string(ad['day_before_yesterday'], ad['day_before_yesterday_noactive'])
+            
+            data = [
+                get_home_button(name),
+                get_home_button(count),
+                get_home_button(td),
+                get_home_button(ld),
+                get_home_button(dby),
+            ]
+            markup.add(*data)
+        table.add_row(is_white= num % 2, **ad)
     
-
+    stats_file_name = 'stats_ads.html'
+    table.save_page(path='/var/www/admin/www/obertivanie.com/bot_images/ads/'+ stats_file_name)
+    markup.add(InlineKeyboardButton('Полная статистика', web_app=WebAppInfo(url=f'https://obertivanie.com/bot_images/ads/{stats_file_name}')))
     message_data = {
         'chat_id': call.from_user.id,
         'text': f'Ads statistics',

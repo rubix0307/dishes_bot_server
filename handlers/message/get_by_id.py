@@ -10,7 +10,7 @@ from aiogram.utils.markdown import hlink
 from app import bot, dp
 from config import ADMIN_ID, BUY_AD_URL, MEDIA_URL
 from db.functions import sql
-from functions import (Article, get_data_dish, get_date, get_fav_ids,
+from functions import (Article, get_data_dish, get_date, get_fav_ids, get_user_role,
                        update_last_message, user_activity_record, you_very_active)
 from markups import get_home_button
 
@@ -29,7 +29,7 @@ async def show_dish(message: types.Message):
             WHERE user_id = {user.id} AND time_at = "{get_date()}";''')
         count_activity = today_activity[0]['count']
 
-        if count_activity >= 100:
+        if count_activity >= 100 and not get_user_role(user.id) == 2:
             await you_very_active(bot, message, count_activity)
             return
     except:

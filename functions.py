@@ -1082,66 +1082,65 @@ async def start(message: types.Message,state=None,):
             start_parameters = message.text.split()[1].split('__')
 
             for start_parameter in start_parameters:
-                if start_parameter == 'speed':
-                    data_answer.update({'text':f'''{data_answer['text']}{br*2}❗️ Быстрый поиск работает только в этом чате (с ботом)'''})
-                
-                elif 'from=' in start_parameter or start_parameter.isdigit():
-
-                    try:
-                        came_from = start_parameter.split('=')[1]
-                    except IndexError:
-                        came_from = start_parameter
-
-                    last_from = sql(f'''SELECT came_from FROM `users` WHERE user_id = {user.id}''')[0]
-
-                    if last_from['came_from'] == came_from:
-                        data_answer.update({'text':f'''{data_answer['text']}{br*2}❗️ Вы уже были приглашены этим пользователем'''})
-                        continue
-
-                    elif last_from['came_from'] and last_from['came_from'].isdigit() and came_from.isdigit():
-                        data_answer.update({'text':f'''{data_answer['text']}{br*2}❗️ Вы уже были приглашены другим пользователем'''})
-                        continue
-
-                    elif came_from == str(user.id):
-                        data_answer.update({'text':f'''{data_answer['text']}{br*2}❗️ Вы не можете пригласить сами себя'''})
-                        continue
-
-                    try:
-                        if not last_from['came_from'] or not last_from['came_from'].isdigit():
-                            sql_query = f'''UPDATE `users` SET `came_from`='{came_from}' WHERE `user_id` = {user.id}'''
-                            sql(sql_query, commit=True)
-                            continue
-                    except Exception as e:
-                        pass
-
-                elif start_parameter == call_filters['contest']:
-                    await contest(message)
-                    await update_last_message(message, castom_message_id = message.message_id + 1)
-                    user_activity_record(user.id, None, message.text)
-
-                    is_return = True
-
-                elif 'gcategory=' in start_parameter:
-                    cat = start_parameter.split('=')[1]
-                    categories = {
-                        'zavtrak':['🍳 ЗАВТРАК', 'Категория=завтраки', 'свой '],
-                        'pervie':['🍲 ПЕРВЫЕ БЛЮДА', 'Категория=супы', 'вкуснейшие '],
-                        'osnovnie':['🍖 ОСНОВНЫЕ БЛЮДА', 'Категория=основные', ''],
-                        'obed':['🍽 НА ОБЕД', 'Категория=основные', 'что покушать '],
-                        'desert':['🥞 ДЕСЕРТЫ', 'Категория=выпечка', 'невероятные '],
-                    }
-                    if cat in categories.keys():
-                        btn_title = categories[cat][0] + ' 👩‍🍳'
-                        btn_search = categories[cat][1]
-                        add_title_row = f'Смотри {categories[cat][2]} {categories[cat][0]} по кнопке ниже'
+                try:
+                    if start_parameter == 'speed':
+                        data_answer.update({'text':f'''{data_answer['text']}{br*2}❗️ Быстрый поиск работает только в этом чате (с ботом)'''})
                     
-                elif 'get_id=' in start_parameter:
-                    dish_id = int(start_parameter.split('=')[1])
-                    show_diche = True
+                    elif 'from=' in start_parameter or start_parameter.isdigit():
 
-                elif 'query_text=' in start_parameter:
-                    query_text = start_parameter.split('=')[1]
-        
+                        try:
+                            came_from = start_parameter.split('=')[1]
+                        except IndexError:
+                            came_from = start_parameter
+
+                        last_from = sql(f'''SELECT came_from FROM `users` WHERE user_id = {user.id}''')[0]
+
+                        if last_from['came_from'] == came_from:
+                            data_answer.update({'text':f'''{data_answer['text']}{br*2}❗️ Вы уже были приглашены этим пользователем'''})
+                            continue
+
+                        elif last_from['came_from'] and last_from['came_from'].isdigit() and came_from.isdigit():
+                            data_answer.update({'text':f'''{data_answer['text']}{br*2}❗️ Вы уже были приглашены другим пользователем'''})
+                            continue
+
+                        elif came_from == str(user.id):
+                            data_answer.update({'text':f'''{data_answer['text']}{br*2}❗️ Вы не можете пригласить сами себя'''})
+                            continue
+
+                        try:
+                            if not last_from['came_from'] or not last_from['came_from'].isdigit():
+                                sql_query = f'''UPDATE `users` SET `came_from`='{came_from}' WHERE `user_id` = {user.id}'''
+                                sql(sql_query, commit=True)
+                                continue
+                        except Exception as e:
+                            pass
+
+                    elif start_parameter == call_filters['contest']:
+                        await contest(message)
+                        await update_last_message(message, castom_message_id = message.message_id + 1)
+                        user_activity_record(user.id, None, message.text)
+
+                        is_return = True
+
+                    elif 'gcategory=' in start_parameter:
+                        cat = start_parameter.split('=')[1]
+                        cat_data = sql(f'''SELECT * FROM search_link WHERE query = "{cat}"''')
+
+                        if cat_data:
+                            btn_title = cat_data[0]['btn_title']
+                            btn_search = cat_data[0]['btn_search']
+                            add_title_row = cat_data[0]['description']
+     
+                        
+                    elif 'get_id=' in start_parameter:
+                        dish_id = int(start_parameter.split('=')[1])
+                        show_diche = True
+
+                    elif 'query_text=' in start_parameter:
+                        query_text = start_parameter.split('=')[1]
+                
+                except:
+                    pass
         except IndexError:
             start_parameter = None
 

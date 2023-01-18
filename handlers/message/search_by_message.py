@@ -7,7 +7,7 @@ from app import bot, dp
 from config import BOT_URL, MEDIA_URL
 from db.functions import sql
 from functions import (Article, get_data_dish, get_date,
-                       get_home_button, is_edited_mode, send_categories_markup, update_last_message,
+                       get_home_button, get_user_role, is_edited_mode, send_categories_markup, update_last_message,
                        user_activity_record, you_very_active)
 from aiogram.dispatcher import FSMContext
 br = '\n'
@@ -28,7 +28,7 @@ async def main_def(message: types.Message, state: FSMContext):
                     WHERE `dish_id` = `query_text` AND user_id = {user.id} AND time_at = "{get_date()}";''')
 
                 count_activity = today_activity_isdigit[0]['count']
-                if count_activity >= 20 and not is_edited_mode(user.id, state):
+                if count_activity >= 20 and not is_edited_mode(user.id, state) and not get_user_role(user.id) == 2:
                     await you_very_active(bot, message, count_activity)
                     return
             except:
