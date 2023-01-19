@@ -1,3 +1,4 @@
+import random
 from aiogram import types
 from aiogram.types.inline_keyboard import InlineKeyboardMarkup
 from app import bot, dp
@@ -108,8 +109,9 @@ async def get_ads_stats(call: types.CallbackQuery, callback_data: dict()):
             markup.add(*data)
         table.add_row(is_white= num % 2, **ad)
     
-    stats_file_name = 'stats_ads.html'
-    table.save_page(path='/var/www/admin/www/obertivanie.com/bot_images/ads/'+ stats_file_name)
+    forder = '/var/www/admin/www/obertivanie.com/bot_images/ads/'
+    stats_file_name = f'stats_ads{random.randint(0,10)}.html'
+    table.save_page(style_path=forder + 'table1.css', path=forder + stats_file_name)
     markup.add(InlineKeyboardButton('Полная статистика', web_app=WebAppInfo(url=f'https://obertivanie.com/bot_images/ads/{stats_file_name}')))
     message_data = {
         'chat_id': call.from_user.id,

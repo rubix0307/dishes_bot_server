@@ -423,7 +423,13 @@ class StatsTableHtml:
         </table>
         '''
 
-    def get_html(self, title='Рекламная статистика') -> str:
+    def get_style(self, style_path):
+        try:
+            return open(style_path, 'r', encoding='utf-8').read()
+        except:
+            return
+
+    def get_html(self, style_path,  title='Рекламная статистика', ) -> str:
         return f'''
 <!DOCTYPE html>
 <html lang="ru">
@@ -432,7 +438,9 @@ class StatsTableHtml:
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
-    <link rel="stylesheet" href="https://obertivanie.com/bot_images/ads/table.css">
+    <link rel="stylesheet" href="https://obertivanie.com/bot_images/ads/table1.css">
+    {self.get_style(style_path)}
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
     <h1>{title}</h1>
@@ -441,9 +449,9 @@ class StatsTableHtml:
 </html>
         '''
 
-    def save_page(self, path='stats.html', title='Рекламная статистика'):
+    def save_page(self, style_path='table1.css', path='stats.html', title='Рекламная статистика'):
         if not DEBUG:
-            open(path, 'w', encoding='UTF-8').write(self.get_html(title))
+            open(path, 'w', encoding='UTF-8').write(self.get_html(style_path, title))
             
 
 
