@@ -11,7 +11,7 @@ MEDIA_PATH = os.environ['MEDIA_PATH']
 
 GROUP_ID = int(os.environ['GROUP_ID'])
 GROUP_LINK = os.environ['GROUP_LINK']
-ADMIN_ID = os.environ['ADMIN_ID']
+ADMIN_ID = int(os.environ['ADMIN_ID'])
 
 DB_USER = os.environ['DB_USER']
 DB_PASSWORD = os.environ['DB_PASSWORD']
