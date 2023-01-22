@@ -4,19 +4,19 @@ import dotenv
 dotenv.load_dotenv('.env')
 
 BOT_TOKEN = os.environ['BOT_TOKEN']
-BOT_URL = 'https://t.me/best_recipe_bot'
+BOT_URL = 'https://t.me/best_recipe_bot' # Check out the bot at this link
 
-MEDIA_URL = 'https://obertivanie.com/bot_images/'
-MEDIA_PATH = '/var/www/admin/www/obertivanie.com/bot_images/'
+MEDIA_URL = os.environ['MEDIA_URL']
+MEDIA_PATH = os.environ['MEDIA_PATH']
 
 GROUP_ID = int(os.environ['GROUP_ID'])
-GROUP_LINK = 'https://t.me/best_recipe_group'
-ADMIN_ID = 887832606
+GROUP_LINK = os.environ['GROUP_LINK']
+ADMIN_ID = os.environ['ADMIN_ID']
 
-DB_USER = os.environ['db_user']
-DB_PASSWORD = os.environ['db_password']
+DB_USER = os.environ['DB_USER']
+DB_PASSWORD = os.environ['DB_PASSWORD']
 
-BUY_AD_URL = 'https://t.me/xx_rubix_xx'
+BUY_AD_URL = os.environ['BUY_AD_URL']
 
 LINK_SEPARATOR = '__'
 
