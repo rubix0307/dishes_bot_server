@@ -1,7 +1,7 @@
+
 import asyncio
 import time
 
-import aioschedule
 from aiogram import Bot
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import Dispatcher
@@ -13,35 +13,21 @@ storage = MemoryStorage()
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot, storage=storage)
 
-
-
-        
-
 if __name__ == '__main__':
     from aiogram import executor
 
+    from functions import main
+    from functions.admin import scheduler
     from handlers import dp
-    from mailing.functions import mailing_dishe
-
-    async def scheduler():
-        aioschedule.every().day.at("08:30").do(mailing_dishe)
-        # aioschedule.every().day.at("19:30").do(subscribe_to_group)
-        # aioschedule.every(1).seconds.do(mailing_dishe) # test
-        while True:
-            await aioschedule.run_pending()
-            await asyncio.sleep(1)
-
-
+    
 
     async def on_startup(dp):
+        print('✅ Bot is run')
         asyncio.create_task(scheduler())
 
-    print('bot is run')
     while 1:
         try:
             executor.start_polling(dp, on_startup=on_startup)
-
         except NetworkError:
             print(f'reconecting')
             time.sleep(1)
-    

@@ -1,9 +1,3 @@
-from .commands_handlers import dp
-from .get_by_id import dp
-from .invite_mailing_to_group import dp
-from .search_by_message import dp
-
-
+from .commands import dp
+from .search_by_inline import dp
 __all__ = ["dp"]
-
-

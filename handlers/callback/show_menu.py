@@ -1,8 +1,8 @@
 from aiogram import types
 
 from app import bot, dp
-from functions import by_categories, by_countries, contest, get_home, groups, user_activity_record
-from markups import call_filters, show_menu
+from functions.main import by_categories, by_countries, contest, get_home, groups, user_activity_record
+from functions.markups import *
 
 
 @dp.callback_query_handler(show_menu.filter(), state='*')
@@ -28,6 +28,7 @@ async def show_dish(call: types.CallbackQuery, callback_data: dict()):
 
         elif call_filters['nothing'] in menu_name:
             await call.answer()
+            
     except:
         await get_home(call)
 

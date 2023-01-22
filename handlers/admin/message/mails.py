@@ -2,8 +2,10 @@ from aiogram import types
 from aiogram.dispatcher import FSMContext
 
 from app import dp
-from handlers.admin.functions import *
-from markups import mails_call_filter
+from functions.admin import *
+from functions.markups import mails_call_filter
+
+
 
 
 
