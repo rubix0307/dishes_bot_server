@@ -8,14 +8,18 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types.inline_keyboard import (InlineKeyboardButton,
                                            InlineKeyboardMarkup)
+from aiogram.utils.exceptions import MessageCantBeForwarded
+from aiogram.utils.markdown import hlink
 
 from app import bot
 from config import DEBUG, GROUP_ID
-from functions.db import sql
-from functions.main import get_user_role, update_last_message
-from functions.markups import mails_call_filter, mails_call_menu
-from aiogram.utils.markdown import hlink
-from aiogram.utils.exceptions import MessageCantBeForwarded
+from .db import sql
+from .main import get_user_role, update_last_message
+from .markups import get_home_button, mails_call_filter, mails_call_menu
+
+from .markups import set_channel_call_menu
+
+
 class StatsTableHtml:
     def __init__(self):
         self.rows = []
@@ -125,11 +129,11 @@ br = '\n'
 line = '—'*22
 mailing_cancel_data = 'Для отмены рассылки — /cancel'
 default_text = 'Текст не указан ⭕️'
-
+default_channel_name = 'не выбран ⭕️'
 class Form(StatesGroup):
     text = State()
     photo = State()
-    disable_web_page_preview = False
+    disable_web_page_preview = True
     share_state = False
 
 def get_action(text, action_name):
@@ -138,26 +142,22 @@ def get_action(text, action_name):
         callback_data=mails_call_menu.new(action=mails_call_filter[action_name]))
 
 async def set_default_data_mails(data):
-    if not 'disable_web_page_preview' in data.keys():
-        data['disable_web_page_preview'] = False
 
-    if not 'disable_web_page_preview' in data.keys():
-        data['disable_web_page_preview'] = False
-
-    if not 'paddings_state' in data.keys():
-        data['paddings_state'] = False
-
-    if not 'text' in data.keys():
-        data['text'] = default_text
+    data['text'] = data.get('text', default_text)
+    data['self_view'] = data.get('self_view', False)
+    data['set_channel'] = data.get('set_channel', None)
+    data['paddings_state'] = data.get('paddings_state', False)
+    data['protect_content'] = data.get('protect_content', False)
+    data['disable_web_page_preview'] = data.get('disable_web_page_preview', True)
 
     if not 'share_state' in data.keys() or data['text'].isdigit():
         data['share_state'] = data['text'].isdigit()
 
-    if not 'protect_content' in data.keys():
-        data['protect_content'] = False
 
-    if not 'self_view' in data.keys():
-        data['self_view'] = False  
+    data['channel_id'] = data.get('channel_id', GROUP_ID)
+    data['channel_info'] = data.get('channel_info', await bot.get_chat(chat_id=data['channel_id']))
+
+
 
 async def send_or_edit_message(message, message_data):
     try:
@@ -168,12 +168,14 @@ async def send_or_edit_message(message, message_data):
             await message.message.delete()
     except:
         answer = await message.answer(**message_data)
+        await update_last_message(message, castom_message_id=answer.message_id)
         await message.delete()
     return answer
 
 async def mailing_cancel(message: types.Message, state=FSMContext):
     message_data = {
         'text': 'Рассылка отменена',
+        'reply_markup': InlineKeyboardMarkup().add(get_home_button('На главную'))
     }
     await send_or_edit_message(message, message_data)
     await state.finish()
@@ -218,22 +220,25 @@ async def get_preview_mail(message: types.Message, data):
 
     web_page_preview_state = f'''Предпоказ: {'✅' if not data['disable_web_page_preview'] else '❌'}'''
     paddings_state = f'''Отступ: {'✅' if data['paddings_state'] else '❌'}'''
-    share_state = f'''Пересылка сообщения: {'✅' if data['share_state'] else '❌'}'''
+    share_state = f'''Взять с канала {'✅' if data['share_state'] else '❌'}'''
     protect_content_state = f'''Копирование: {'✅' if not data['protect_content'] else '❌'}'''
+
+    edit_channel = f'Изменить канал'
 
     markup = InlineKeyboardMarkup(row_width=1)
     markup.add(get_action('Изменить текст', 'edit_text'))
 
+    if 'http' in data['text']:
+        markup.add(get_action(web_page_preview_state, 'preview_state'))
+
+    
     if not data['share_state']:
-        try:
-            if 'http' in message.message.html_text:
-                markup.add(get_action(web_page_preview_state, 'preview_state'))
-        except:
-            if 'http' in message.html_text:
-                markup.add(get_action(web_page_preview_state, 'preview_state'))
         markup.add(get_action(paddings_state, 'paddings_state'))
     else:
-        markup.add(get_action(protect_content_state, 'protect_content_state'))
+        markup.add(get_action(edit_channel, 'edit_channel'))
+
+
+    markup.add(get_action(protect_content_state, 'protect_content_state'))
 
     if data['text'].isdigit():
         markup.add(get_action(share_state, 'share_state'))
@@ -244,8 +249,11 @@ async def get_preview_mail(message: types.Message, data):
     if data['self_view']:
         markup.add(get_action('Отправить всем', 'send_all'))
 
+
+    channel_info = f'''{br}Канал: [{data['channel_info'].title}](https://t.me/{data['channel_info'].username}){br}''' if data['share_state'] else ''
+
     message_data = {
-        'text' : f'''{mailing_cancel_data}{br*2}Текущий текст:{br}{line}{br}{data['text']}''',
+        'text' : f'''{mailing_cancel_data}{channel_info}{br*2}Текущий текст:{br}{line}{br}{data['text']}''',
         'reply_markup' : markup,
         'parse_mode' : 'MarkdownV2',
         'disable_web_page_preview': data['disable_web_page_preview'],
@@ -262,6 +270,42 @@ async def mailing_set_text(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['text'] = message.md_text
         await get_preview_mail(message=message, data=data)
+
+async def edit_channel(message: types.CallbackQuery, state: FSMContext):
+
+
+    reply_markup = InlineKeyboardMarkup()
+
+    channels = sql(f'''SELECT * FROM `channels_for_mails`''')
+
+    for channel in channels:
+        channel_data = await bot.get_chat(channel['id'])
+
+        reply_markup.add(
+            InlineKeyboardButton(text=channel_data.title, callback_data=set_channel_call_menu.new(id=channel_data.id))
+        )
+
+
+    message_data = {
+        'text': f'Выберите канал для выбора поста',
+        'reply_markup': reply_markup,
+    }
+
+    await message.message.answer(**message_data)
+    await message.message.delete()
+
+async def set_channel(message: types.CallbackQuery, state: FSMContext, callback_data: dict()):
+    
+    channel_id = callback_data.get('id')
+    async with state.proxy() as data:
+        data['channel_id'] = channel_id
+        data['channel_info'] = await bot.get_chat(chat_id=data['channel_id'])
+        data['self_view'] = False
+        await get_preview_mail(message, data)
+
+
+    
+
   
 async def edit_preview_state(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
@@ -345,7 +389,7 @@ async def send_mailing(message, state: FSMContext, only_me=True):
             else:
                 mail_function = bot.forward_message
                 message_data = {
-                    'from_chat_id': GROUP_ID,
+                    'from_chat_id': data['channel_id'],
                     'message_id' : data['text'].split('/')[-1],
                     'protect_content' : data['protect_content'],
                 }

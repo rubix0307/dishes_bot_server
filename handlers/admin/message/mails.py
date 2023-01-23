@@ -21,6 +21,17 @@ async def mailing_cancel_handler(message: types.Message, state=FSMContext):
 async def mailing_start_handler(message: types.Message, state: FSMContext):
     await mailing_start(message=message, state=state)
 
+@dp.callback_query_handler(set_channel_call_menu.filter(), state='*')
+async def mailing_start_handler(message: types.Message, state: FSMContext, callback_data: dict):
+    await set_channel(message=message, state=state, callback_data=callback_data)
+    
+@dp.callback_query_handler(lambda call: mails_call_filter['edit_channel'] in call.data, state='*')
+async def mailing_start_handler(message: types.Message, state: FSMContext):
+    await edit_channel(message=message, state=state)
+
+
+
+
 
 @dp.message_handler(state=Form.text)
 async def mailing_set_text_handler(message: types.Message, state: FSMContext):

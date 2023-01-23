@@ -94,6 +94,9 @@ mails_call_filter = {
     'self_send': 'self_send',
     'send_all': 'send_all',
     'settings': 'settings',
+    'edit_channel': 'edit_channel',
 }
 
 mails_call_menu = CallbackData('mails', 'action')
+edit_channel_call_menu = CallbackData('edit_channel')
+set_channel_call_menu = CallbackData('edit_channel', 'id')
