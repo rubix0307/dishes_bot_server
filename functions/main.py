@@ -356,7 +356,7 @@ class Dishes:
 
     def __init__(self,
         user_id: int,
-        query: str = None,
+        query: str = '',
         dishe_id: int = None,
         category: int or str = None,
         start:int = 0, stop:int = 50,
@@ -370,7 +370,7 @@ class Dishes:
         get_by_favorites=False,
     ):
         self.start_time = time.time()
-        self.query = query
+        self.query = query[:24]
         self.normal_query = get_normal_form(query)
         self.user_id = user_id
         self.dishe_id = dishe_id
@@ -464,7 +464,7 @@ class Dishes:
                 (select GROUP_CONCAT(p.local_photo SEPARATOR '\n') from photos as p where p.dish_id=d.id) as photos
             FROM dishes as d 
 
-            WHERE MATCH (d.norm_title, d.title) AGAINST ("{self.query}")
+            WHERE MATCH (d.norm_title, d.title) AGAINST ("{self.normal_query}")
             LIMIT {self.start}, {self.stop}'''
         )
         if not self.dishes_data_list:
@@ -474,7 +474,7 @@ class Dishes:
                     (select GROUP_CONCAT(c.title SEPARATOR ', ') from categories as c INNER JOIN dishes_categories as dc ON c.id=dc.category_id where dc.dish_id=d.id) as categories,
                     (select GROUP_CONCAT(p.local_photo SEPARATOR '\n') from photos as p where p.dish_id=d.id) as photos
                 FROM dishes as d 
-                WHERE norm_title LIKE "%{self.query}%"
+                WHERE norm_title LIKE "%{self.normal_query}%"
                 LIMIT {self.start},{self.stop}
             ''')
 
@@ -605,7 +605,16 @@ class Dishes:
 
 
     def get_post_data_by_id(self):
-        self.dishe_data = self.get_by_id()[0]
+        try:
+            self.dishe_data = self.get_by_id()[0]
+        except Exception as ex:
+            log(f'get_post_data_by_id exception: {ex} | user_id: {self.user_id} | query: {self.query} | dishe_id: {self.dishe_id}')
+            answer = get_home_page(user_id=self.user_id, btn_title='ПОИСК ПО НАЗВАНИЮ', btn_search=self.query, add_title_row='Что-то пошло не так, воспользуйтесь поиском')
+            return {
+                'text': answer['text'],
+                'reply_markup': answer['reply_markup'],
+            }
+        
         self.dishe_data.update(
             {
                 'preview': 
@@ -881,7 +890,7 @@ async def check_activity(message: types.Message):
     )[0]['count']
 
 
-    if today_activity > 50:
+    if today_activity > 50 and not user.id == ADMIN_ID:
         answer_id = await message.answer(
             text=f'''Вы слишком активны. Попробуйте завтра.{br}Вы все еще можете использовать другие возможности бота.{br*2}В главное меню - /start{br*2}{hlink('Связь с администратором', BUY_AD_URL)}''',
             parse_mode='html',
@@ -897,7 +906,7 @@ async def check_activity(message: types.Message):
         return False
 
     text = message.text
-    if text.isdigit():
+    if text.isdigit() and not user.id == ADMIN_ID:
         user_activity_record(user_id=user.id, dish_id=int(text), query_text=text)
     return True
 

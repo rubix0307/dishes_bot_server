@@ -276,10 +276,10 @@ async def edit_channel(message: types.CallbackQuery, state: FSMContext):
 
     reply_markup = InlineKeyboardMarkup()
 
-    channels = sql(f'''SELECT * FROM `channels_for_mails`''')
+    channels = sql(f'''SELECT * FROM `channels`''')
 
     for channel in channels:
-        channel_data = await bot.get_chat(channel['id'])
+        channel_data = await bot.get_chat(channel['channel_id'])
 
         reply_markup.add(
             InlineKeyboardButton(text=channel_data.title, callback_data=set_channel_call_menu.new(id=channel_data.id))
@@ -344,18 +344,19 @@ async def edit_protect_content_state(message: types.Message, state: FSMContext):
 
         await get_preview_mail(message=message, data=data)
 
-async def send_stats_curr_mail(chat_id, mails, errors, message_data, num, max_users,edit=True, message_id=None, is_share = False, data_text=''):
+async def send_stats_curr_mail(chat_id, mails, errors, has_this_post, message_data, num, max_users,edit=True, message_id=None, is_share = False, data_text=''):
+    has_this_post_info = f'{br}Уже имеют: {has_this_post}{br}' if has_this_post else ''
     if not is_share:
         data = {
             'chat_id': chat_id,
-            'text': f'''Рассылка {num+1}/{max_users}{br}Отправлено: {mails}{br}Не отправлено: {errors}{br*2}Сообщение рассылки:{br}{line}{br}{message_data['text']}''',
+            'text': f'''Рассылка {num+1}/{max_users}{br}Отправлено: {mails}{br}Не отправлено: {errors}{has_this_post_info}{br*2}Сообщение рассылки:{br}{line}{br}{message_data['text']}''',
             'disable_web_page_preview': message_data['disable_web_page_preview'],
             'parse_mode': message_data['parse_mode'],
         }
     else:
         data = {
             'chat_id': chat_id,
-            'text': f'''Рассылка {num+1}/{max_users}{br}Отправлено: {mails}{br}Не отправлено: {errors}{br*2}Пересылается сообщение {hlink(f'№{data_text}', f'https://t.me/best_recipe_group/{data_text}')} с группы''',
+            'text': f'''Рассылка {num+1}/{max_users}{br}Отправлено: {mails}{br}Не отправлено: {errors}{has_this_post_info}{br*2}Пересылается сообщение {hlink(f'№{data_text}', f'https://t.me/best_recipe_group/{data_text}')} с группы''',
             'parse_mode': 'html',
         }
 
@@ -379,6 +380,8 @@ async def send_mailing(message, state: FSMContext, only_me=True):
             share_state = data['share_state']
             data_text = data['text']
 
+            db_data = {}
+
             if not share_state:
                 mail_function = bot.send_message
                 message_data = {
@@ -390,8 +393,15 @@ async def send_mailing(message, state: FSMContext, only_me=True):
                 mail_function = bot.forward_message
                 message_data = {
                     'from_chat_id': data['channel_id'],
-                    'message_id' : data['text'].split('/')[-1],
+                    'message_id' :  int(data['text']),
                     'protect_content' : data['protect_content'],
+                }
+                
+
+                id_for_db = sql(f'''SELECT * FROM `channels` WHERE channel_id = "{data['channel_id']}"''')
+                db_data = {
+                    'channel_id_for_db': id_for_db[0]['id'],
+                    'channel_msg_id': int(data['text']),
                 }
 
         if only_me:
@@ -405,7 +415,6 @@ async def send_mailing(message, state: FSMContext, only_me=True):
             async with state.proxy() as data:
                 data['self_view'] = True
                 await get_preview_mail(message, data)
-            await message.delete()
             
 
         elif role in [2,3] and not only_me:
@@ -416,10 +425,11 @@ async def send_mailing(message, state: FSMContext, only_me=True):
             
             mails = 0
             errors = 0
+            has_this_post = 0
 
             
 
-            stats_message = await send_stats_curr_mail(chat_id, mails, errors, message_data, 0, max_users, edit=False, is_share=share_state, data_text=data_text)
+            stats_message = await send_stats_curr_mail(chat_id, mails, errors, has_this_post, message_data, 0, max_users, edit=False, is_share=share_state, data_text=data_text)
 
 
             try:
@@ -427,18 +437,38 @@ async def send_mailing(message, state: FSMContext, only_me=True):
             except:
                 pass
             await state.finish()
+
+            id_channel_in_db = db_data.get('channel_id_for_db', False)
+            msg_id = db_data.get('channel_msg_id', False)
+
             for num, data in enumerate(all_users):
 
                 if not num % 10:
-                    await send_stats_curr_mail(chat_id, mails, errors, message_data, num, max_users, message_id=stats_message.message_id, is_share=share_state, data_text=data_text)
+                    await send_stats_curr_mail(chat_id, mails, errors,has_this_post, message_data, num, max_users, message_id=stats_message.message_id, is_share=share_state, data_text=data_text)
 
 
                 user_id = data['user_id']
+
+                
+                if id_channel_in_db and msg_id:
+                    data_count = sql(f'''
+                        SELECT COUNT(*) as `count` FROM `mailing_user` 
+                        WHERE `channel_id` = '{id_channel_in_db}' AND `channel_msg_id` = '{msg_id}' AND `user_id` = '{user_id}'
+                        GROUP BY channel_msg_id
+                    ''')
+                    if len(data_count):
+                        user_has_this_post = bool(data_count[0].get('count', 0))
+
+                        if user_has_this_post:
+                            has_this_post += 1
+                            continue
+
+
                 try:
                     answer = await mail_function(chat_id=user_id, **message_data)
                     sql(f'''UPDATE `users` SET `is_active` = '1' WHERE `users`.`user_id` = {user_id};''', commit=True)
-                    is_insert = sql(f'''INSERT INTO `mailing_user`(user_id, date, message_id) VALUES ({user_id},'{date}', {answer.message_id})''', commit=True)
-
+                    is_insert = sql(f'''INSERT INTO `mailing_user`(`user_id`, `channel_id`, `channel_msg_id`, `date`, `message_id`) VALUES ({user_id},{db_data.get('channel_id_for_db', 'Null')},{db_data.get('channel_msg_id', 'Null')},"{date}", "{answer.message_id}")'''
+, commit=True)
                     mails += 1
                 except:
                     sql(f'''UPDATE users SET is_active = '0' WHERE user_id = {user_id};''', commit=True)
@@ -446,7 +476,7 @@ async def send_mailing(message, state: FSMContext, only_me=True):
                     continue
 
 
-            await send_stats_curr_mail(chat_id, mails, errors, message_data, num, max_users, message_id=stats_message.message_id, is_share=share_state, data_text=data_text)
+            await send_stats_curr_mail(chat_id, mails, errors,has_this_post,  message_data, num, max_users, message_id=stats_message.message_id, is_share=share_state, data_text=data_text)
 
     except Exception as ex:
 
