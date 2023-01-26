@@ -9,21 +9,23 @@ from aiogram.utils.exceptions import NetworkError
 
 from config import BOT_TOKEN
 
+
+
 storage = MemoryStorage()
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot, storage=storage)
 
 if __name__ == '__main__':
     from aiogram import executor
-
     from functions import main
     from functions.admin import scheduler
     from handlers import dp
-    
+    from functions.admin import send_top_post_after_signing_hour
 
     async def on_startup(dp):
         print('✅ Bot is run')
         asyncio.create_task(scheduler())
+        
 
     while 1:
         try:

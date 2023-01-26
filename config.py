@@ -1,6 +1,8 @@
 import os
 import dotenv
 
+
+
 dotenv.load_dotenv('.env')
 
 BOT_TOKEN = os.environ['BOT_TOKEN']
@@ -18,7 +20,13 @@ DB_PASSWORD = os.environ['DB_PASSWORD']
 
 BUY_AD_URL = os.environ['BUY_AD_URL']
 
+TELETHON_API_ID = int(os.environ['TELETHON_API_ID'])
+TELETHON_API_HASH = os.environ['TELETHON_API_HASH']
+TELETHON_PHONE = os.environ['TELETHON_PHONE']
+
 LINK_SEPARATOR = '__'
+
+telethon_client = {}
 
 DEBUG = os.path.exists('DEBUG')
 if DEBUG:

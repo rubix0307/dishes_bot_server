@@ -24,6 +24,10 @@ def log(msg, error=True):
     print(answer)
     open('log.txt', 'a' , encoding='utf-8').write(answer)
 
+def get_current_date()  -> str:
+    now = datetime.now()
+    return f'{now.year}-{now.month}-{now.day}'
+
 
 morph = pymorphy2.MorphAnalyzer()
 def get_normal_form(text: str):

@@ -1,6 +1,7 @@
 
 import asyncio
 import datetime
+import threading
 
 import aioschedule
 from aiogram import types
@@ -8,16 +9,17 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types.inline_keyboard import (InlineKeyboardButton,
                                            InlineKeyboardMarkup)
-from aiogram.utils.exceptions import MessageCantBeForwarded
+from aiogram.utils.exceptions import MessageCantBeForwarded, ChatNotFound, CantInitiateConversation
 from aiogram.utils.markdown import hlink
+from telethon.sync import TelegramClient
 
 from app import bot
-from config import DEBUG, GROUP_ID
-from .db import sql
-from .main import get_user_role, update_last_message
-from .markups import get_home_button, mails_call_filter, mails_call_menu
+from config import ADMIN_ID, DEBUG, GROUP_ID, TELETHON_API_HASH, TELETHON_API_ID, TELETHON_PHONE, telethon_client
 
-from .markups import set_channel_call_menu
+from .db import sql
+from .main import get_current_date, get_user_role, update_last_message
+from .markups import (get_home_button, mails_call_filter, mails_call_menu,
+                      set_channel_call_menu)
 
 
 class StatsTableHtml:
@@ -108,9 +110,84 @@ async def notification_mailing():
     except:
         pass
 
+async def send_top_post_after_signing_hour():
+    users_where_not_send_by_hour = sql(f'''
+        SELECT DISTINCT u.user_id
+        FROM users as u 
+        WHERE u.is_active AND NOT u.is_send_after_hour_subs AND u.date <= NOW() - INTERVAL 1 HOUR;
+    ''')
+
+    top_posts = sql(f'''SELECT channel_id, post_id FROM `channels_posts` WHERE text NOT LIKE "%#НовыйГод%" ORDER BY `forwards` DESC LIMIT 10''')
+    
+    channels = sql(f'''SELECT * FROM `channels`''')
+    channels_dict = {channel['id']: channel for channel in channels}
+        
+    channel_id = None
+    message_id = None
+    sends = 0
+    errors = 0
+
+    for user in users_where_not_send_by_hour:
+        user_id = user['user_id']
+
+        user_sended_posts = sql(f'''SELECT * FROM `mailing_user` WHERE user_id = {user_id}''')
+        channels_posts_user = {channel['id']: [] for channel in channels}
+        
+        for post in user_sended_posts:
+            if post.get('channel_id', False):
+                channels_posts_user[post['channel_id']].append(post['channel_msg_id'])
+
+
+        for top_post in top_posts:
+            if not top_post['post_id'] in channels_posts_user[top_post['channel_id']]:
+                channel_id = top_post['channel_id']
+                message_id = top_post['post_id']
+                from_chat_id = channels_dict[channel_id]['channel_id']
+                break
+        
+        if channel_id and message_id and from_chat_id:
+            try:
+
+                answer = await bot.forward_message(
+                    chat_id=user_id,
+                    from_chat_id=from_chat_id,
+                    message_id=message_id,
+                )
+                sql(f'''INSERT INTO `mailing_user`(`user_id`, `channel_id`, `channel_msg_id`, `date`, `message_id`) VALUES ("{user_id}", "{channel_id}", "{message_id}", "{get_current_date()}", {answer.message_id})''', commit=True)
+                sql(f'''UPDATE `users` SET `is_send_after_hour_subs` = '1' WHERE `users`.`user_id` = {user_id};''', commit=True)
+                
+                sends += 1
+                print(f'Авторассылка{br}Отправлено: {sends}{br}Не отправлено: {errors}')
+            except Exception as ex:
+                errors += 1
+
+    if users_where_not_send_by_hour:
+        try:
+            last_mails = sql(f'''SELECT * FROM `mailing_after_hour_subs` WHERE `date` = "{get_current_date()}"''')
+            sql(f'''UPDATE `mailing_after_hour_subs` SET `sends`={last_mails[0]['sends'] + sends},`errors`={last_mails[0]['errors'] + errors} WHERE `date` = "{get_current_date()}"''', commit=True)
+        except:
+            sql(f'''INSERT INTO `mailing_after_hour_subs`(`sends`, `errors`) VALUES ({sends},{errors})''', commit=True)
+
+async def get_stats_by_after_hour_subs(message: types.Message=None):
+    
+
+    if message:
+        user_id = message.from_user.id
+    else:
+        user_id = ADMIN_ID
+
+
+    last_mails = sql(f'''SELECT * FROM `mailing_after_hour_subs` WHERE `date` = "{get_current_date()}"''')[0]
+    await bot.send_message(chat_id=user_id, text=f'''Ежедневный отчет по авто-рассылке{br}Отправлено: {last_mails['sends']}{br}Не отправлено: {last_mails['errors']}''')
+
 async def scheduler():
     aioschedule.every().day.at("13:00").do(notification_mailing)
     aioschedule.every().day.at("19:00").do(notification_mailing)
+
+    aioschedule.every().day.at("23:55").do(get_stats_by_after_hour_subs)
+
+    aioschedule.every(10).minutes.do(send_top_post_after_signing_hour)
+
 
     while True:
         if DEBUG:
@@ -481,5 +558,90 @@ async def send_mailing(message, state: FSMContext, only_me=True):
     except Exception as ex:
 
         pass
+
+
+
+async def get_client(api_id: int = TELETHON_API_ID,api_hash: str = TELETHON_API_HASH, file_name: str = 'sessions/checker_account3',proxy=(2, '149.154.167.91', 443),) -> TelegramClient:
+    proxy = None
+    client = TelegramClient(file_name, api_id, api_hash, proxy=proxy)
+    client.castom_data = {
+        'file_name': file_name,
+        'proxy': proxy,
+    }
+    try:
+        await client.start(phone=TELETHON_PHONE)
+        client.session
+        return client
+    except:
+        print(f'FAIL {file_name}')
+        return False
+
+
+
+async def update_stats_by_channels_posts():
+    global client
+
+    try:
+        if not client:
+            client = await get_client(proxy=None, )
+            print('Создаю клиент')
+        else:
+            print('Клиент есть')
+    except:
+        client = await get_client(proxy=None, )
+        print('Ошибка, cоздаю клиент')
+    
+    if not client:
+        await bot.send_message(chat_id=ADMIN_ID, text='Telethon client is not available')
+        return
+    last_grouped_id = None
+    channels = sql(f'''SELECT id, channel_id FROM `channels`''')
+    posts = 2000
+
+
+    for channel in channels:
+        channel_id, dialog_id = channel.values()
+        all_posts = [post_id['post_id'] for post_id in sql(f'''SELECT post_id FROM `channels_posts` WHERE channel_id = {channel_id}''')]
+
+
+        messages = await client.get_messages(dialog_id, limit=posts)
+        for message in messages:
+            
+            print(f'https://t.me/best_recipe_group/{message.id}')
+
+            if last_grouped_id == message.grouped_id and message.grouped_id:
+                continue
+            last_grouped_id = message.grouped_id
+
+
+            date = message.date
+            date_formated = f'{date.year}-{date.month}-{date.day} {date.hour}:{date.minute}:00'
+            
+            if not message.id in all_posts:
+                sql(f'''
+                INSERT INTO `channels_posts`
+                (`channel_id`, `post_id`, `views`, `forwards`, `photo_id`, `button_count`, `text`, `is_forward`, `is_noforwards`, `is_reply`, `is_pinned`, `date`)
+                VALUES 
+                ('{channel_id}',{message.id},{message.views if message.views else 'Null'},{message.forwards if message.forwards else 'Null'},{message.photo.id if message.photo else 'Null'},{message.button_count},'{message.text}','{int(bool(message.forward))}','{int(bool(message.noforwards))}','{int(bool(message.is_reply))}','{int(bool(message.pinned))}','{date_formated}')
+                ''', commit=True)
+            else:
+                update_data = [
+                    ['views', message.views if message.views else 0],
+                    ['forwards', message.forwards if message.forwards else 0],
+                    ['photo_id', message.photo.id if message.photo else 0],
+                    ['is_pinned', int(bool(message.pinned))],
+                    ['text', message.text.replace('"', '\\"').replace("'", "\\'") if message.text else ' '],
+                ]
+
+                
+                set_query = ', '.join([f'`{value[0]}`= "{value[1]}"' for value in update_data])
+                sql(f'''UPDATE `channels_posts` SET {set_query} WHERE `channel_id` = "{channel_id}" AND `post_id` = "{message.id}"''', commit=True)
+
+
+
+
+
+
+
 
 

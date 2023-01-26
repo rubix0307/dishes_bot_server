@@ -4,3 +4,5 @@ log.txt
 venv
 __pycache__
 .git
+sessions/*.session
+sessions/*.session-journal
