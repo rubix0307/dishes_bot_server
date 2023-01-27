@@ -110,6 +110,23 @@ async def notification_mailing():
     except:
         pass
 
+def get_not_sended_top_post_data(user_id, channels, top_posts, channels_dict):
+    user_sended_posts = sql(f'''SELECT * FROM `mailing_user` WHERE user_id = {user_id}''')
+    channels_posts_user = {channel['id']: [] for channel in channels}
+    
+    for post in user_sended_posts:
+        if post.get('channel_id', False):
+            channels_posts_user[post['channel_id']].append(post['channel_msg_id'])
+
+    for top_post in top_posts:
+        if not top_post['post_id'] in channels_posts_user[top_post['channel_id']]:
+            channel_id = top_post['channel_id']
+            message_id = top_post['post_id']
+            from_chat_id = channels_dict[channel_id]['channel_id']
+            return channel_id, message_id, from_chat_id
+    return None, None, None
+
+
 async def send_top_post_after_signing_hour():
     users_where_not_send_by_hour = sql(f'''
         SELECT DISTINCT u.user_id
@@ -130,21 +147,8 @@ async def send_top_post_after_signing_hour():
     for user in users_where_not_send_by_hour:
         user_id = user['user_id']
 
-        user_sended_posts = sql(f'''SELECT * FROM `mailing_user` WHERE user_id = {user_id}''')
-        channels_posts_user = {channel['id']: [] for channel in channels}
-        
-        for post in user_sended_posts:
-            if post.get('channel_id', False):
-                channels_posts_user[post['channel_id']].append(post['channel_msg_id'])
+        channel_id, message_id, from_chat_id = get_not_sended_top_post_data(user_id, channels, top_posts, channels_dict)
 
-
-        for top_post in top_posts:
-            if not top_post['post_id'] in channels_posts_user[top_post['channel_id']]:
-                channel_id = top_post['channel_id']
-                message_id = top_post['post_id']
-                from_chat_id = channels_dict[channel_id]['channel_id']
-                break
-        
         if channel_id and message_id and from_chat_id:
             try:
 
