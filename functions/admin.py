@@ -42,10 +42,10 @@ class StatsTableHtml:
     def add_row(self, name:str, count:int, noactive:int, today:int, today_noactive:int, lastday:int, lastday_noactive:int, day_before_yesterday:int, day_before_yesterday_noactive:int, is_white: bool = False) -> None:
         self.rows.append(f'''<tr {'class="white"' if not is_white else ''}>
 <td>{name}</td>
-<td>{count-noactive}{f'<br>-{noactive}' if noactive else ''}</td>
-<td>{today-today_noactive if today-today_noactive else ''}{f'<br>-{today_noactive}' if today_noactive else ''}</td>
-<td>{lastday-lastday_noactive if lastday-lastday_noactive else ''}{f'<br>-{lastday_noactive}' if lastday_noactive else ''}</td>
-<td>{day_before_yesterday-day_before_yesterday_noactive if day_before_yesterday-day_before_yesterday_noactive else ''}{f'<br>-{day_before_yesterday_noactive}' if day_before_yesterday_noactive else ''}</td>
+<td>{count-noactive}{f'<div class="min">-{noactive}</div>' if noactive else ''}</td>
+<td>{today-today_noactive if today-today_noactive else ''}{f'<div class="min">-{today_noactive}</div>' if today_noactive else ''}</td>
+<td>{lastday-lastday_noactive if lastday-lastday_noactive else ''}{f'<div class="min">-{lastday_noactive}</div>' if lastday_noactive else ''}</td>
+<td>{day_before_yesterday-day_before_yesterday_noactive if day_before_yesterday-day_before_yesterday_noactive else ''}{f'<div class="min">-{day_before_yesterday_noactive}</div>' if day_before_yesterday_noactive else ''}</td>
 </tr>''')
 
     def get_table(self):
@@ -61,7 +61,7 @@ class StatsTableHtml:
         try:
             return open(style_path, 'r', encoding='utf-8').read()
         except:
-            return
+            return ''
 
     def get_html(self, style_path,  title='Рекламная статистика', ) -> str:
         return f'''
@@ -90,8 +90,7 @@ class StatsTableHtml:
         '''
 
     def save_page(self, style_path='table1.css', path='stats.html', title='Рекламная статистика'):
-        if not DEBUG:
-            open(path, 'w', encoding='UTF-8').write(self.get_html(style_path, title))
+        open(path, 'w', encoding='UTF-8').write(self.get_html(style_path, title))
             
 
 def format_string(day, noactive):

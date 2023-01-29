@@ -1,0 +1,41 @@
+::-webkit-scrollbar {
+    width: 0px;
+    background-color: rgba(0, 0, 0, 0);
+}
+html {
+    --tg-theme-text-color: azure;
+    --tg-theme-bg-color: #0E1621;
+    --tg-theme-secondary-bg-color: #243344;
+}
+
+
+body {
+    color: var(--tg-theme-text-color);
+    background: var(--tg-theme-bg-color);
+    /* background: url('https://www.obertivanie.com/bot_images/default/фонdjango-размытое.png') center center fixed; */
+    font-family: 'Roboto', sans-serif;
+    margin-bottom: 200px;
+    max-width: 100%;
+}
+
+h1 {
+    text-align: center;
+    width: 100%;
+}
+
+table {
+    width: 100%;
+    /* font-size: 10px; */
+}
+td {
+    min-width: 50px;
+    text-align: center;
+    font-size: 90%;
+    padding: 0;
+}
+.min {
+    font-size: 70%;
+}
+.white {
+    background-color: var(--tg-theme-secondary-bg-color);
+}

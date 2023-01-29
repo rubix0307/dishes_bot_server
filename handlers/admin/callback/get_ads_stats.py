@@ -108,11 +108,16 @@ async def get_ads_stats(call: types.CallbackQuery, callback_data: dict()):
             ]
             markup.add(*data)
         table.add_row(is_white= num % 2, **ad)
+        
     if not DEBUG:
         forder = '/var/www/admin/www/obertivanie.com/bot_images/ads/'
         stats_file_name = f'stats_ads{random.randint(0,10)}.html'
-        table.save_page(style_path=forder + 'table1.css', path=forder + stats_file_name)
-        markup.add(InlineKeyboardButton('Полная статистика', web_app=WebAppInfo(url=f'https://obertivanie.com/bot_images/ads/{stats_file_name}')))
+    else:
+        forder = ''
+        stats_file_name = f'stats.html'
+
+    table.save_page(style_path=forder + 'table1.css', path=forder + stats_file_name)
+    markup.add(InlineKeyboardButton('Полная статистика', web_app=WebAppInfo(url=f'https://obertivanie.com/bot_images/ads/{stats_file_name}')))
     
     message_data = {
         'chat_id': call.from_user.id,
