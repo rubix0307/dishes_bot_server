@@ -771,20 +771,29 @@ def register_user(data):
         return False
 
 
-async def check_start_photo(message: types.Message, user):
+async def check_start_photo(user_id, is_mandatory_sending=False) -> bool:
+
     try:
-        is_start_photo = bool(db.sql(f'''SELECT COUNT(*) as count FROM `start_messages` WHERE user_id = {user.id}''')[0]['count'])
-        if not is_start_photo:
-            photo = await message.answer_photo(
+        is_start_photo = bool(db.sql(f'''SELECT COUNT(*) as count FROM `start_messages` WHERE user_id = {user_id}''')[0]['count'])
+        
+        if not is_start_photo or is_mandatory_sending:
+            url = 'https://t.me/+aIOTdrZd3504NGUy'
+           
+            photo = await bot.send_photo(
+                chat_id=user_id,
+                caption=f'''Подпишись на наш {hlink('канал', url)}, новые и вкусные рецепты, лайфхаки и юмор каждый день''',
                 photo='https://obertivanie.com/bot_images/default/sub_to_group.png',
                 protect_content=True,
-                reply_markup=InlineKeyboardMarkup().add(InlineKeyboardButton(text=f'👩‍👦‍👦⠀В группу⠀👨‍👩‍👧', url='https://t.me/+aIOTdrZd3504NGUy'))
+                parse_mode='html',
+                reply_markup=InlineKeyboardMarkup().add(InlineKeyboardButton(text=f'👩‍👦‍👦⠀В КАНАЛ⠀👨‍👩‍👧', url=url))
             )
+
             await asyncio.sleep(0.5)
-            await bot.pin_chat_message(chat_id=user.id, message_id=photo.message_id)
-            db.sql(f'''INSERT INTO `start_messages`(`user_id`, `message_id`) VALUES ({user.id},{photo.message_id})''')
+            await bot.pin_chat_message(chat_id=user_id, message_id=photo.message_id)
+            db.sql(f'''INSERT INTO `start_messages`(`user_id`, `message_id`) VALUES ({user_id},{photo.message_id})''', commit=True)
+            return True
     except:
-        pass
+        return False
 
 async def start_from(came_from, user, data, *args, **kwargs) -> dict:
     last_from = db.sql(f'''SELECT came_from FROM `users` WHERE user_id = {user.id}''')[0]
@@ -846,7 +855,7 @@ async def start(message: types.Message):
     user = message.from_user
     data = {}
     
-    await check_start_photo(message, user)
+    await check_start_photo(user.id)
 
     try:
         start_params = get_parameters(message.text.replace('/start ', ''))

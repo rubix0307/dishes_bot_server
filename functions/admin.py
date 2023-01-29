@@ -1,6 +1,7 @@
 
 import asyncio
 import datetime
+import re
 import threading
 
 import aioschedule
@@ -17,7 +18,7 @@ from app import bot
 from config import ADMIN_ID, DEBUG, GROUP_ID, TELETHON_API_HASH, TELETHON_API_ID, TELETHON_PHONE, telethon_client
 
 from .db import sql
-from .main import get_current_date, get_user_role, update_last_message
+from .main import check_start_photo, get_current_date, get_user_role, update_last_message
 from .markups import (get_home_button, mails_call_filter, mails_call_menu,
                       set_channel_call_menu)
 
@@ -184,14 +185,41 @@ async def get_stats_by_after_hour_subs(message: types.Message=None):
     last_mails = sql(f'''SELECT * FROM `mailing_after_hour_subs` WHERE `date` = "{get_current_date()}"''')[0]
     await bot.send_message(chat_id=user_id, text=f'''Ежедневный отчет по авто-рассылке{br}Отправлено: {last_mails['sends']}{br}Не отправлено: {last_mails['errors']}''')
 
+
+async def channel_subscription_notification():
+    all_active_users = sql(f'''SELECT u.user_id FROM users as u WHERE u.is_active ORDER BY u.role_id DESC''')
+    
+    sends = 0
+    errors = 0
+
+    for user in all_active_users:
+        try:
+            user_id = user['user_id']
+            user_channel_status = await bot.get_chat_member(chat_id=GROUP_ID, user_id=user_id)
+            print(user_channel_status.status)
+
+            if user_channel_status.status == 'left':
+                is_send = await check_start_photo(user_id, is_mandatory_sending=True)
+                if is_send:
+                    sends += 1
+                else:
+                    sql(f'''UPDATE `users` SET `is_active` = '0' WHERE `users`.`user_id` = {user_id};''', commit=True)
+                    errors += 1
+            continue
+        except:
+            continue
+
+    await bot.send_message(chat_id=ADMIN_ID, text=f'Напоминание о подписке на канал{br*2}Отправлено: {sends}{br}Не отправлено: {errors}')
+
 async def scheduler():
+    aioschedule.every(5).days.at("10:00").do(channel_subscription_notification)
+
     aioschedule.every().day.at("13:00").do(notification_mailing)
     aioschedule.every().day.at("19:00").do(notification_mailing)
 
     aioschedule.every().day.at("23:55").do(get_stats_by_after_hour_subs)
 
     aioschedule.every(10).minutes.do(send_top_post_after_signing_hour)
-
 
     while True:
         if DEBUG:
