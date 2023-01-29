@@ -164,6 +164,7 @@ async def send_top_post_after_signing_hour():
                 sends += 1
                 print(f'Авторассылка{br}Отправлено: {sends}{br}Не отправлено: {errors}')
             except Exception as ex:
+                sql(f'''UPDATE `users` SET `is_active` = '0' WHERE `users`.`user_id` = {user_id};''', commit=True)
                 errors += 1
 
     if users_where_not_send_by_hour:
