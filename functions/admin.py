@@ -126,15 +126,31 @@ def get_not_sended_top_post_data(user_id, channels, top_posts, channels_dict):
             return channel_id, message_id, from_chat_id
     return None, None, None
 
+async def send_message_all_admins(text):
+    all_admins = sql(f'''SELECT user_id FROM `users` WHERE role_id = 2''')
 
-async def send_top_post_after_signing_hour():
-    users_where_not_send_by_hour = sql(f'''
-        SELECT DISTINCT u.user_id
-        FROM users as u 
-        WHERE u.is_active AND NOT u.is_send_after_hour_subs AND u.date <= NOW() - INTERVAL 1 HOUR;
-    ''')
+    for admin in all_admins:
+        await bot.send_message(chat_id=admin['user_id'], text=text)
 
-    top_posts = sql(f'''SELECT channel_id, post_id FROM `channels_posts` WHERE text NOT LIKE "%#НовыйГод%" ORDER BY `forwards` DESC LIMIT 10''')
+async def send_top_posts(only_new_users_by_hour=True):
+    if only_new_users_by_hour:
+
+        users = sql(f'''
+            SELECT DISTINCT u.user_id
+            FROM users as u 
+            WHERE u.is_active AND NOT u.is_send_after_hour_subs AND u.date <= NOW() - INTERVAL 1 HOUR;
+        ''')
+
+    else:
+        users = sql(f'''
+            SELECT DISTINCT u.user_id
+            FROM users as u
+            WHERE NOT u.date >= DATE(CURDATE())
+        ''')
+
+
+
+    top_posts = sql(f'''SELECT channel_id, post_id FROM `channels_posts` WHERE text != '' AND text NOT LIKE "%#НовыйГод%" ORDER BY `forwards` DESC LIMIT 20''')
     
     channels = sql(f'''SELECT * FROM `channels`''')
     channels_dict = {channel['id']: channel for channel in channels}
@@ -142,9 +158,10 @@ async def send_top_post_after_signing_hour():
     channel_id = None
     message_id = None
     sends = 0
+    sended_all_top_posts = 0
     errors = 0
 
-    for user in users_where_not_send_by_hour:
+    for user in users:
         user_id = user['user_id']
 
         channel_id, message_id, from_chat_id = get_not_sended_top_post_data(user_id, channels, top_posts, channels_dict)
@@ -158,20 +175,24 @@ async def send_top_post_after_signing_hour():
                     message_id=message_id,
                 )
                 sql(f'''INSERT INTO `mailing_user`(`user_id`, `channel_id`, `channel_msg_id`, `date`, `message_id`) VALUES ("{user_id}", "{channel_id}", "{message_id}", "{get_current_date()}", {answer.message_id})''', commit=True)
-                sql(f'''UPDATE `users` SET `is_send_after_hour_subs` = '1' WHERE `users`.`user_id` = {user_id};''', commit=True)
+                sql(f'''UPDATE `users` SET `is_send_after_hour_subs` = '1', `is_active` = '1' WHERE `users`.`user_id` = {user_id};''', commit=True)
                 
                 sends += 1
                 print(f'Авторассылка{br}Отправлено: {sends}{br}Не отправлено: {errors}')
             except Exception as ex:
                 sql(f'''UPDATE `users` SET `is_active` = '0' WHERE `users`.`user_id` = {user_id};''', commit=True)
                 errors += 1
-
-    if users_where_not_send_by_hour:
+        else:
+            sended_all_top_posts += 1
+    if users:
         try:
             last_mails = sql(f'''SELECT * FROM `mailing_after_hour_subs` WHERE `date` = "{get_current_date()}"''')
             sql(f'''UPDATE `mailing_after_hour_subs` SET `sends`={last_mails[0]['sends'] + sends},`errors`={last_mails[0]['errors'] + errors} WHERE `date` = "{get_current_date()}"''', commit=True)
         except:
             sql(f'''INSERT INTO `mailing_after_hour_subs`(`sends`, `errors`) VALUES ({sends},{errors})''', commit=True)
+
+        if not only_new_users_by_hour:
+            await send_message_all_admins(f'Ежедневная авторассылка топ постов{br*2}Отправлено: {sends}/{len(users)}{br}Не отправлено: {errors}{br*2}Нет новых постов для: {sended_all_top_posts}')
 
 async def get_stats_by_after_hour_subs(message: types.Message=None):
     
@@ -212,14 +233,15 @@ async def channel_subscription_notification():
     await bot.send_message(chat_id=ADMIN_ID, text=f'Напоминание о подписке на канал{br*2}Отправлено: {sends}{br}Не отправлено: {errors}')
 
 async def scheduler():
-    aioschedule.every(5).days.at("10:00").do(channel_subscription_notification)
+    aioschedule.every(10).minutes.do(send_top_posts, only_new_users_by_hour=True)
+    aioschedule.every().day.at("13:01").do(send_top_posts, only_new_users_by_hour=False)
 
-    aioschedule.every().day.at("13:00").do(notification_mailing)
-    aioschedule.every().day.at("19:00").do(notification_mailing)
-
+    # aioschedule.every().day.at("13:00").do(notification_mailing)
+    # aioschedule.every().day.at("19:00").do(notification_mailing)
     aioschedule.every().day.at("23:55").do(get_stats_by_after_hour_subs)
 
-    aioschedule.every(10).minutes.do(send_top_post_after_signing_hour)
+    aioschedule.every(5).days.at("10:00").do(channel_subscription_notification)
+
 
     while True:
         if DEBUG:
@@ -602,7 +624,6 @@ async def get_client(api_id: int = TELETHON_API_ID,api_hash: str = TELETHON_API_
     }
     try:
         await client.start(phone=TELETHON_PHONE)
-        client.session
         return client
     except:
         print(f'FAIL {file_name}')
@@ -639,7 +660,10 @@ async def update_stats_by_channels_posts():
         messages = await client.get_messages(dialog_id, limit=posts)
         for message in messages:
             
-            print(f'https://t.me/best_recipe_group/{message.id}')
+            try:
+                print(f'https://t.me/{message._sender.username}/{message.id}')
+            except:
+                pass
 
             if last_grouped_id == message.grouped_id and message.grouped_id:
                 continue

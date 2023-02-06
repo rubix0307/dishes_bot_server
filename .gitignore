@@ -6,3 +6,5 @@ __pycache__
 .git
 sessions/*.session
 sessions/*.session-journal
+
+web_app.html
