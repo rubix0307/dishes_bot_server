@@ -208,29 +208,37 @@ async def get_stats_by_after_hour_subs(message: types.Message=None):
 
 
 async def channel_subscription_notification():
-    all_active_users = sql(f'''SELECT u.user_id FROM users as u WHERE u.is_active ORDER BY u.role_id DESC''')
-    
+    users = sql(f'''SELECT u.user_id FROM users as u WHERE 1 ORDER BY u.role_id DESC''')
+    try:
+        admins = [admin['user_id'] for admin in sql(f'''SELECT u.user_id FROM users as u WHERE u.role_id = 2''')]
+    except:
+        admins = []
     sends = 0
     errors = 0
+    in_channel = len(admins)
 
-    for user in all_active_users:
+    for user in users:
         try:
             user_id = user['user_id']
             user_channel_status = await bot.get_chat_member(chat_id=GROUP_ID, user_id=user_id)
             print(user_channel_status.status)
 
-            if user_channel_status.status == 'left':
+            if user_channel_status.status == 'left' or user_id in admins:
                 is_send = await check_start_photo(user_id, is_mandatory_sending=True)
                 if is_send:
                     sends += 1
+                    sql(f'''UPDATE `users` SET `is_active` = '1' WHERE `users`.`user_id` = {user_id};''', commit=True)
                 else:
                     sql(f'''UPDATE `users` SET `is_active` = '0' WHERE `users`.`user_id` = {user_id};''', commit=True)
                     errors += 1
-            continue
+            else:
+                in_channel += 1
+
         except:
             continue
+    
+    await send_message_all_admins(f'Автоматическая реклама групп{br}(раз в 5 дней){br*2}Отправлено: {sends}/{len(users)}{br}Не отправлено: {errors}{br}Состоят в канале: {in_channel}')
 
-    await bot.send_message(chat_id=ADMIN_ID, text=f'Напоминание о подписке на канал{br*2}Отправлено: {sends}{br}Не отправлено: {errors}')
 
 async def scheduler():
     aioschedule.every(10).minutes.do(send_top_posts, only_new_users_by_hour=True)

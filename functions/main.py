@@ -777,15 +777,16 @@ async def check_start_photo(user_id, is_mandatory_sending=False) -> bool:
         is_start_photo = bool(db.sql(f'''SELECT COUNT(*) as count FROM `start_messages` WHERE user_id = {user_id}''')[0]['count'])
         
         if not is_start_photo or is_mandatory_sending:
-            url = 'https://t.me/+aIOTdrZd3504NGUy'
+            recipe_book_invite_url = 'https://t.me/+aIOTdrZd3504NGUy'
+            lifehack_invite_url = 'https://t.me/+JKomHC4hlhQ2NTNi'
            
             photo = await bot.send_photo(
                 chat_id=user_id,
-                caption=f'''Подпишись на наш {hlink('канал', url)}, новые и вкусные рецепты, лайфхаки и юмор каждый день''',
-                photo='https://obertivanie.com/bot_images/default/sub_to_group.png',
+                caption=f'''{hbold('Подпишись на наши каналы:')}{br*2}{hlink('Книга рецептов', recipe_book_invite_url)} - новые и вкусные рецепты, интересные факты и юмор каждый день{br*2}{hlink('Кулинарные лайфхаки', lifehack_invite_url)} - лучшие лайфхаки для готовки и не только''',
+                photo='https://obertivanie.com/bot_images/default/sub_to_channel.png',
                 protect_content=True,
                 parse_mode='html',
-                reply_markup=InlineKeyboardMarkup().add(InlineKeyboardButton(text=f'👩‍👦‍👦⠀В КАНАЛ⠀👨‍👩‍👧', url=url))
+                reply_markup=InlineKeyboardMarkup().add(InlineKeyboardButton(text=f'👩‍👦‍👦⠀В КАНАЛ⠀👨‍👩‍👧', url=recipe_book_invite_url))
             )
 
             await asyncio.sleep(0.5)
